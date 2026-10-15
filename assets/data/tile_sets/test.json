@@ -1,0 +1,7 @@
+{
+	"texture_name": "Test-Iso-Tilemap.png",
+	"atlas_width": 2,
+	"atlas_height": 1,
+	"tile_width": 64,
+	"tile_height": 32
+}

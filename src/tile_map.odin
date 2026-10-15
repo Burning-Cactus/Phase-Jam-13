@@ -1,8 +1,11 @@
 package game
 
-import rl "vendor:raylib"
-// import "core:math/linalg"
 import "core:encoding/json"
+import "core:mem"
+import "core:path/filepath"
+import "core:strings"
+// import "core:math/linalg"
+import rl "vendor:raylib"
 
 
 TILE_MAP_SIZE :: Vec2i{64, 64}
@@ -27,21 +30,10 @@ Tile_Set :: struct {
 	tile_height: i32,
 }
 
-load_tile_map :: proc(file_path: string) -> (tile_map: Tile_Map, success: bool) {
-	bytes, ok := read_entire_file(file_path)
-	if !ok {
-		return
-	}
-	defer delete(bytes)
-	unmarshal_err := json.unmarshal(bytes, &tile_map)
-	if unmarshal_err == nil do success = true
-	return
-}
-
 create_tile_map :: proc(tile_map: ^Tile_Map) {
 	path :: "assets/tile_sets/warehouse_floor.png"
 	texture := rl.LoadTexture(path)
-	tile_set := Tile_Set{
+	tile_set := Tile_Set {
 		texture = texture,
 		atlas_width = texture.width / TILE_SIZE.x,
 		atlas_height = texture.height / TILE_SIZE.y,
@@ -63,8 +55,34 @@ create_tile_map :: proc(tile_map: ^Tile_Map) {
 	tile_map.pos = {-32, -32}
 }
 
+load_tile_map :: proc(tile_map_name: string) -> (tile_map: Tile_Map, success: bool) {
+	arena: mem.Dynamic_Arena
+	mem.dynamic_arena_init(&arena)
+	defer mem.dynamic_arena_destroy(&arena)
+	arena_allocator := mem.dynamic_arena_allocator(&arena)
+	json_file_name := strings.concatenate({tile_map_name, ".json"}, arena_allocator)
+	json_path, path_err := filepath.join({root_dir, "assets/data/tile_maps", tile_map_name}, arena_allocator)
+	bytes, ok := read_entire_file(json_path, arena_allocator)
+	if !ok {
+		return
+	}
+	unmarshal_err := json.unmarshal(bytes, &tile_map, allocator = context.allocator)
+	if unmarshal_err != nil {
+		return
+	}
+
+	tile_set, tile_set_ok := load_tile_set(tile_map.tile_set_name)
+	if !tile_set_ok {
+		return
+	}
+	tile_map.tile_set = tile_set
+	success = true
+	return
+}
+
 unload_tile_map :: proc(tile_map: Tile_Map) {
-	rl.UnloadTexture(tile_map.tile_set.texture)
+	delete(tile_map.tiles)
+	unload_tile_set(tile_map.tile_set)
 }
 
 draw_tile_map :: proc(tile_map_in: Tile_Map) {
@@ -83,4 +101,40 @@ draw_tile_map :: proc(tile_map_in: Tile_Map) {
 				{0xff, 0xff, 0xff, 0xff})
 		}
 	}
+}
+
+load_tile_set :: proc(tile_set_name: string) -> (tile_set: Tile_Set, success: bool) {
+	arena: mem.Dynamic_Arena
+	mem.dynamic_arena_init(&arena)
+	defer mem.dynamic_arena_destroy(&arena)
+	arena_allocator := mem.dynamic_arena_allocator(&arena)
+	json_file_name := strings.concatenate({tile_set_name, ".json"}, arena_allocator)
+	json_path, path_err := filepath.join({root_dir, "assets/data/tile_sets", tile_set_name}, arena_allocator)
+	if path_err != nil {
+		success = false
+		return
+	}
+	bytes, file_ok := read_entire_file(json_path, arena_allocator)
+	if !file_ok {
+		success = false
+		return
+	}
+	json_err := json.unmarshal(bytes, &tile_set, allocator = context.allocator)
+	if json_err != nil {
+		success = false
+		return
+	}
+	texture_file_path, texture_path_err := filepath.join({root_dir, "assets/tile_sets", string(tile_set.texture_name)}, arena_allocator)
+	if texture_path_err != nil {
+		success = false
+		return
+	}
+	cstr_texture_path := strings.clone_to_cstring(texture_file_path, arena_allocator)
+	tile_set.texture = rl.LoadTexture(cstr_texture_path)
+	success = true
+	return
+}
+
+unload_tile_set :: proc(tile_set: Tile_Set) {
+	rl.UnloadTexture(tile_set.texture)
 }

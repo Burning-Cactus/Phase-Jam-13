@@ -14,6 +14,8 @@ PLAYER_SPEED :: 0.02
 
 UPDATE_SPEED :: f32(1) / 120
 
+root_dir: string = ""
+
 run: bool = true
 time_since_update: f32 = 0
 
