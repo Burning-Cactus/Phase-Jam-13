@@ -1,0 +1,227 @@
+{ "frames": {
+   "Malistocrat #run_E 0.aseprite": {
+    "frame": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #run_E 1.aseprite": {
+    "frame": { "x": 64, "y": 0, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #run_E 2.aseprite": {
+    "frame": { "x": 128, "y": 0, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #run_E 3.aseprite": {
+    "frame": { "x": 192, "y": 0, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #run_E 4.aseprite": {
+    "frame": { "x": 256, "y": 0, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #run_E 5.aseprite": {
+    "frame": { "x": 320, "y": 0, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #idle_E 0.aseprite": {
+    "frame": { "x": 0, "y": 64, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #idle_E 1.aseprite": {
+    "frame": { "x": 64, "y": 64, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #idle_E 2.aseprite": {
+    "frame": { "x": 128, "y": 64, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #idle_E 3.aseprite": {
+    "frame": { "x": 192, "y": 64, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #idle_E 4.aseprite": {
+    "frame": { "x": 256, "y": 64, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #idle_E 5.aseprite": {
+    "frame": { "x": 320, "y": 64, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #swing_E 0.aseprite": {
+    "frame": { "x": 0, "y": 128, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #swing_E 1.aseprite": {
+    "frame": { "x": 64, "y": 128, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #swing_E 2.aseprite": {
+    "frame": { "x": 128, "y": 128, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #swing_E 3.aseprite": {
+    "frame": { "x": 192, "y": 128, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #swing_S 0.aseprite": {
+    "frame": { "x": 0, "y": 192, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #swing_S 1.aseprite": {
+    "frame": { "x": 64, "y": 192, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #swing_S 2.aseprite": {
+    "frame": { "x": 128, "y": 192, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #swing_S 3.aseprite": {
+    "frame": { "x": 192, "y": 192, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #swing_N 0.aseprite": {
+    "frame": { "x": 0, "y": 256, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #swing_N 1.aseprite": {
+    "frame": { "x": 64, "y": 256, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #swing_N 2.aseprite": {
+    "frame": { "x": 128, "y": 256, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #swing_N 3.aseprite": {
+    "frame": { "x": 192, "y": 256, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   },
+   "Malistocrat #dead.aseprite": {
+    "frame": { "x": 0, "y": 320, "w": 64, "h": 64 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 64, "h": 64 },
+    "sourceSize": { "w": 64, "h": 64 },
+    "duration": 125
+   }
+ },
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.16.1-x64",
+  "image": "Malistocrat_SpriteSheet_V1_2.png",
+  "format": "RGBA8888",
+  "size": { "w": 384, "h": 384 },
+  "scale": "1",
+  "frameTags": [
+   { "name": "run_E", "from": 0, "to": 5, "direction": "forward", "color": "#000000ff" },
+   { "name": "idle_E", "from": 6, "to": 11, "direction": "forward" },
+   { "name": "swing_E", "from": 12, "to": 15, "direction": "forward", "color": "#000000ff" },
+   { "name": "swing_S", "from": 16, "to": 19, "direction": "forward", "color": "#000000ff" },
+   { "name": "swing_N", "from": 20, "to": 23, "direction": "forward", "color": "#000000ff" },
+   { "name": "dead", "from": 24, "to": 24, "direction": "forward", "color": "#000000ff" }
+  ],
+  "layers": [
+   { "name": "Layer 1", "opacity": 69, "blendMode": "normal" },
+   { "name": "effect2", "opacity": 255, "blendMode": "normal" },
+   { "name": "body", "opacity": 255, "blendMode": "normal" },
+   { "name": "effect", "opacity": 255, "blendMode": "normal" }
+  ],
+  "slices": [
+  ]
+ }
+}
