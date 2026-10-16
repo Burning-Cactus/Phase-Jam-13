@@ -4,6 +4,7 @@ import rl "vendor:raylib"
 import "core:encoding/json"
 import "core:fmt"
 import "core:math/linalg"
+import "core:mem"
 import "core:strings"
 
 DAMAGE_FLASH_DURATION :: 30
@@ -65,6 +66,7 @@ Entity_Renderer :: struct {
 Entity :: struct {
 	in_use: bool,
 	type: Entity_Type,
+	team: Entity_Team,
 	pos: Vec2,
 	velocity: Vec2,
 	max_health: i32,
@@ -76,6 +78,7 @@ Entity :: struct {
 	action_charge: f32,
 	is_acting: bool,
 	target_id: i32,
+	effects: bit_set[Status_Effect],
 
 	// Properties related to animation
 	animation_state: Animation_State,
@@ -94,6 +97,7 @@ Entity_Type :: enum {
 	// WILHELMINA,
 	SAMMY,
 	MALISTOCRAT,
+	BISCUITEER,
 }
 
 register_entities :: proc() {
@@ -108,15 +112,22 @@ register_entities :: proc() {
 	entity_definitions[.SAMMY] = {
 		name = "Sammy",
 		sprite_name = "Sammie",
-		base_health = 30,
+		base_health = 35,
 		base_attack = 4,
 		entity_width = 32,
 	}
 	entity_definitions[.MALISTOCRAT] = {
 		name = "Malistocrat",
 		sprite_name = "Malistocrat",
+		base_health = 25,
+		base_attack = 8,
+		entity_width = 32,
+	}
+	entity_definitions[.BISCUITEER] = {
+		name = "Biscuiteer",
+		sprite_name = "Biscuiteer",
 		base_health = 30,
-		base_attack = 4,
+		base_attack = 6,
 		entity_width = 32,
 	}
 
@@ -128,35 +139,37 @@ unregister_entities :: proc() {
 }
 
 register_renderers :: proc() {
-	nitya_sprite_name := "nitty"
+	Animation_Info :: struct {
+		type: Entity_Type,
+		sprite_name: cstring,
+	}
 
-	nitya_rows, nitya_ok := parse_aseprite_json(nitya_sprite_name, "assets/sprites/nitty.json")
-	if nitya_ok {
-		nitya_mappings := map_animations(nitya_rows)
-		entity_renderers[.NITYA] = {
-			texture = rl.LoadTexture("assets/sprites/nitty.png"),
-			animation_rows = nitya_rows,
-			animation_mappings = nitya_mappings,
-		}
+	json_fmt :: "assets/sprites/%s.json"
+	png_fmt :: "assets/sprites/%s.png"
+
+	definitions :: [?]Animation_Info{
+		{ type = .NITYA, sprite_name = "nitty" },
+		{ type = .SAMMY, sprite_name = "Sammie" },
+		{ type = .MALISTOCRAT, sprite_name = "Malistocrat" },
+		{ type = .BISCUITEER, sprite_name = "Biscuiteer" },
 	}
-	sammy_sprite_name := "Sammie"
-	sammy_rows, sammy_ok := parse_aseprite_json(sammy_sprite_name, "assets/sprites/Sammie.json")
-	if sammy_ok {
-		sammy_mappings := map_animations(sammy_rows)
-		entity_renderers[.SAMMY] = {
-			texture = rl.LoadTexture("assets/sprites/Sammie.png"),
-			animation_rows = sammy_rows,
-			animation_mappings = sammy_mappings,
-		}
-	}
-	malistocrat_sprite_name := "Malistocrat"
-	malistocrat_rows, malistocrat_ok := parse_aseprite_json(malistocrat_sprite_name, "assets/sprites/Malistocrat.json")
-	if malistocrat_ok {
-		malistocrat_mappings := map_animations(malistocrat_rows)
-		entity_renderers[.MALISTOCRAT] = {
-			texture = rl.LoadTexture("assets/sprites/Malistocrat.png"),
-			animation_rows = malistocrat_rows,
-			animation_mappings = malistocrat_mappings,
+
+	arena: mem.Dynamic_Arena
+	mem.dynamic_arena_init(&arena)
+	defer mem.dynamic_arena_destroy(&arena)
+	arena_allocator := mem.dynamic_arena_allocator(&arena)
+
+	for info in definitions {
+		json_path := fmt.aprintf(json_fmt, info.sprite_name, allocator = arena_allocator)
+		json_rows, ok := parse_aseprite_json(string(info.sprite_name), json_path)
+		if ok {
+			mappings := map_animations(json_rows)
+			texture_path := fmt.caprintf(png_fmt, info.sprite_name, allocator = arena_allocator)
+			entity_renderers[info.type] = {
+				texture = rl.LoadTexture(texture_path),
+				animation_rows = json_rows,
+				animation_mappings = mappings,
+			}
 		}
 	}
 
@@ -284,13 +297,14 @@ map_animations :: proc(animation_rows: []Animation_Row) -> [Animation_State]i32 
 }
 
 // Tries to add an entity of input type to the input list. Returns false if failed.
-spawn_entity :: proc(entities: []Entity, type: Entity_Type, pos: Vec2) -> bool {
+spawn_entity :: proc(type: Entity_Type, pos: Vec2, team: Entity_Team) -> bool {
 	for i in 0..<len(entities) {
 		if !entities[i].in_use {
 			definition := entity_definitions[type]
 			entities[i] = Entity {
 				in_use = true,
 				type = type,
+				team = team,
 				pos = pos,
 				max_health = definition.base_health,
 				health = definition.base_health,
@@ -351,7 +365,7 @@ update_entities :: proc(entities: []Entity) {
 					entity.velocity = input_dir * PLAYER_SPEED
 
 					if test_mode && rl.IsKeyPressed(.RIGHT_BRACKET) {
-						spawn_entity(entities[:], .SAMMY, entity.pos + {1, 0})
+						spawn_entity(.SAMMY, entity.pos + {1, 0}, .ENEMY)
 					}
 				} else {
 					update_entity_ai()
@@ -359,16 +373,16 @@ update_entities :: proc(entities: []Entity) {
 				visible_velocity := render_pos_from_world_pos(entity.velocity)
 				if visible_velocity == {0,0} {
 					switch entity.direction {
-					case .EAST: entity.animation_state = .IDLE_E
-					case .NORTH: entity.animation_state = .IDLE_N
-					case .SOUTH: entity.animation_state = .IDLE_S
+					case .EAST: set_animation(entity, .IDLE_E)
+					case .NORTH: set_animation(entity, .IDLE_N)
+					case .SOUTH: set_animation(entity, .IDLE_S)
 					}
 				} else {
 					entity.direction = calculate_animation_direction(visible_velocity)
 					switch entity.direction {
-					case .EAST: entity.animation_state = .RUN_E
-					case .NORTH: entity.animation_state = .RUN_N
-					case .SOUTH: entity.animation_state = .RUN_S
+					case .EAST: set_animation(entity, .RUN_E)
+					case .NORTH: set_animation(entity, .RUN_N)
+					case .SOUTH: set_animation(entity, .RUN_S)
 					}
 					if visible_velocity.x < 0 {
 						entity.facing_left = true
@@ -400,9 +414,9 @@ start_action :: proc(actor: ^Entity) {
 
 	actor.direction = calculate_animation_direction(target.pos - actor.pos)
 	switch actor.direction {
-	case .EAST: actor.animation_state = .SWING_E
-	case .NORTH: actor.animation_state = .SWING_N
-	case .SOUTH: actor.animation_state = .SWING_S
+	case .EAST: set_animation(actor, .SWING_E)
+	case .NORTH: set_animation(actor, .SWING_N)
+	case .SOUTH: set_animation(actor, .SWING_S)
 	}
 	actor.animation_frame = 0
 	actor.frame_time = 0
@@ -435,6 +449,7 @@ draw_entities :: proc(entities: []Entity) {
 			animation := renderer.animation_rows[mapping]
 			current_frame := animation.frames[entity.animation_frame]
 
+			// Animation calculations
 			if current_menu == nil {
 				entity.frame_time += delta
 				if entity.frame_time >= current_frame.duration {
@@ -447,6 +462,8 @@ draw_entities :: proc(entities: []Entity) {
 					current_frame = animation.frames[entity.animation_frame]
 				}
 			}
+
+			// Draw the actual sprite
 			render_pos := cast(Vec2i) render_pos_from_world_pos(entity.pos)
 			sprite_offset := Vec2i{current_frame.width / 2, current_frame.height / 2}
 			source_texture_rec: rl.Rectangle
@@ -465,6 +482,22 @@ draw_entities :: proc(entities: []Entity) {
 				rl.EndShaderMode()
 			} else {
 				rl.DrawTextureRec(renderer.texture, source_texture_rec,	cast(Vec2) (render_pos - sprite_offset), {0xff, 0xff, 0xff, 0xff})
+			}
+
+			// Health bar
+			health_render_pos := render_pos
+			health_render_pos.y -= sprite_offset.y
+			health_bar_rect := rl.Rectangle{f32(health_render_pos.x) - 16, f32(health_render_pos.y) + 6, 32, 4}
+			fill_color, bg_color: rl.Color
+			#partial switch entity.team {
+			case .ALLY:
+				fill_color = {0x6c, 0xc7, 0x44, 0xff}
+				bg_color = {0x34, 0x4f, 0x28, 0xff}
+				draw_bar(f32(entity.health), f32(entity.max_health), health_bar_rect, fill_color, bg_color)
+			case .ENEMY:
+				fill_color = {0xac, 0x20, 0x32, 0xff}
+				bg_color = {0x74, 0x2b, 0x2b, 0xff}
+				draw_bar(f32(entity.health), f32(entity.max_health), health_bar_rect, fill_color, bg_color)
 			}
 		}
 	}
@@ -488,5 +521,12 @@ damage_entity :: proc(target: ^Entity, power: i32) {
 	if target.health <= 0 {
 		target.ko_timer = 90
 		target.in_use = false
+	}
+}
+
+set_animation :: proc(entity: ^Entity, animation: Animation_State) {
+	if entity.animation_state != animation {
+		entity.animation_state = animation
+		entity.animation_frame = 0
 	}
 }

@@ -8,7 +8,7 @@ RESOLUTION :: Vec2i{480, 270}
 TILE_SIZE :: [2]i32{64, 32}
 TILE_WIDTH :: 64
 TILE_HEIGHT :: 32
-MAX_PARTY_MEMBERS :: 4
+MAX_PARTY_SIZE :: 4
 MAX_ENEMIES :: 100
 PLAYER_SPEED :: 0.02
 
@@ -22,6 +22,7 @@ time_since_update: f32 = 0
 current_screen: Screen = .LEVEL
 
 entities := [100]Entity{}
+party_member_ids := [MAX_PARTY_SIZE]i32{}
 party_leader_idx: i32 = 0
 
 menu_texture: rl.Texture2D
@@ -107,45 +108,14 @@ game_init :: proc() {
 		offset = {f32(RESOLUTION.x) / 2, f32(RESOLUTION.y) / 2},
 	}
 
-	entities[0] = {
-		in_use = true,
-		type = .NITYA,
-		pos = {2, 2},
-		velocity = {0,0},
-		max_health = 100,
-		health = 60,
-		attack_power = 12,
-		animation_frame = 0,
-	}
-	party_leader_idx = 0
+	spawn_entity(.BISCUITEER, {2, 2}, .PLAYER)
 
-	entities[1] = {
-		in_use = true,
-		type = .SAMMY,
-		pos = {4, 1},
-		velocity = {0,0},
-		max_health = 100,
-		health = 60,
-		animation_frame = 0,
-	}
-	entities[2] = {
-		in_use = true,
-		type = .SAMMY,
-		pos = {8, 1},
-		velocity = {0,0},
-		max_health = 100,
-		health = 60,
-		animation_frame = 0,
-	}
-	entities[3] = {
-		in_use = true,
-		type = .MALISTOCRAT,
-		pos = {14, 1},
-		velocity = {0,0},
-		max_health = 100,
-		health = 60,
-		animation_frame = 0,
-	}
+	party_leader_idx = 0
+	spawn_entity(.NITYA, {3, 3}, .ALLY)
+
+	spawn_entity(.SAMMY, {4, 1}, .ENEMY)
+	spawn_entity(.SAMMY, {8, 1}, .ENEMY)
+	spawn_entity(.MALISTOCRAT, {14, 1}, .ENEMY)
 }
 
 @(export)

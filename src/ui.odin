@@ -83,7 +83,13 @@ draw_ui :: proc() {
 	}
 }
 
-draw_bar :: proc(fill_ratio: f32, rect: rl.Rectangle, fill_color, bg_color: rl.Color) {
+draw_bar :: proc{draw_bar_values, draw_bar_ratio}
+
+draw_bar_values :: proc(current_value: f32, max_value: f32, rect: rl.Rectangle, fill_color, bg_color: rl.Color) {
+	draw_bar_ratio(current_value / max_value, rect, fill_color, bg_color)
+}
+
+draw_bar_ratio :: proc(fill_ratio: f32, rect: rl.Rectangle, fill_color, bg_color: rl.Color) {
 	fill_size := fill_ratio * rect.width
 	rl.DrawRectanglePro({rect.x, rect.y, fill_size, rect.height}, {}, 0, fill_color)
 	rl.DrawRectanglePro({rect.x + fill_size, rect.y, rect.width - fill_size, rect.height}, {}, 0, bg_color)
@@ -109,6 +115,7 @@ close_battle_menu :: proc() {
 
 @(private) Battle_Options :: enum {
 	ATTACK,
+	// SKILLS,
 	ITEMS,
 	CANCEL,
 }

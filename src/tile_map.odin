@@ -55,13 +55,13 @@ create_tile_map :: proc(tile_map: ^Tile_Map) {
 	tile_map.pos = {-32, -32}
 }
 
-load_tile_map :: proc(tile_map_name: string) -> (tile_map: Tile_Map, success: bool) {
+load_tile_map :: proc(tile_map_file_name: string) -> (tile_map: Tile_Map, success: bool) {
 	arena: mem.Dynamic_Arena
 	mem.dynamic_arena_init(&arena)
 	defer mem.dynamic_arena_destroy(&arena)
 	arena_allocator := mem.dynamic_arena_allocator(&arena)
-	json_file_name := strings.concatenate({tile_map_name, ".json"}, arena_allocator)
-	json_path, path_err := filepath.join({root_dir, "assets/data/tile_maps", tile_map_name}, arena_allocator)
+	// json_file_name := strings.concatenate({tile_map_name, ".json"}, arena_allocator)
+	json_path, _ := filepath.join({root_dir, "assets/data/tile_maps", tile_map_file_name}, arena_allocator)
 	bytes, ok := read_entire_file(json_path, arena_allocator)
 	if !ok {
 		return
@@ -103,13 +103,13 @@ draw_tile_map :: proc(tile_map_in: Tile_Map) {
 	}
 }
 
-load_tile_set :: proc(tile_set_name: string) -> (tile_set: Tile_Set, success: bool) {
+load_tile_set :: proc(tile_set_file_name: string) -> (tile_set: Tile_Set, success: bool) {
 	arena: mem.Dynamic_Arena
 	mem.dynamic_arena_init(&arena)
 	defer mem.dynamic_arena_destroy(&arena)
 	arena_allocator := mem.dynamic_arena_allocator(&arena)
-	json_file_name := strings.concatenate({tile_set_name, ".json"}, arena_allocator)
-	json_path, path_err := filepath.join({root_dir, "assets/data/tile_sets", tile_set_name}, arena_allocator)
+	// json_file_name := strings.concatenate({tile_set_file_name, ".json"}, arena_allocator)
+	json_path, path_err := filepath.join({root_dir, "assets/data/tile_sets", tile_set_file_name}, arena_allocator)
 	if path_err != nil {
 		success = false
 		return
