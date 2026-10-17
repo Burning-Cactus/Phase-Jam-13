@@ -6,6 +6,7 @@
 
 package game
 
+import "core:path/slashpath"
 import "base:runtime"
 import "core:log"
 import "core:c"
@@ -103,7 +104,11 @@ _write_entire_file :: proc(name: string, data: []byte, truncate := true) -> (suc
 		log.errorf("File partially written, wrote %v out of %v bytes", bytes_written, len(data))
 		return
 	}
-	
+
 	log.debugf("File written successfully: %v", name)
 	return true
+}
+
+_join_file_path :: proc(elems: []string, allocator := context.allocator) -> (path: string, err: runtime.Allocator_Error) {
+	return slashpath.join(elems, allocator), .None
 }

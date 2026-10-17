@@ -2,7 +2,6 @@ package game
 
 import "core:encoding/json"
 import "core:mem"
-import "core:path/filepath"
 import "core:strings"
 // import "core:math/linalg"
 import rl "vendor:raylib"
@@ -61,7 +60,7 @@ load_tile_map :: proc(tile_map_file_name: string) -> (tile_map: Tile_Map, succes
 	defer mem.dynamic_arena_destroy(&arena)
 	arena_allocator := mem.dynamic_arena_allocator(&arena)
 	// json_file_name := strings.concatenate({tile_map_name, ".json"}, arena_allocator)
-	json_path, _ := filepath.join({root_dir, "assets/data/tile_maps", tile_map_file_name}, arena_allocator)
+	json_path, _ := join_file_path({root_dir, "assets/data/tile_maps", tile_map_file_name}, arena_allocator)
 	bytes, ok := read_entire_file(json_path, arena_allocator)
 	if !ok {
 		return
@@ -109,7 +108,7 @@ load_tile_set :: proc(tile_set_file_name: string) -> (tile_set: Tile_Set, succes
 	defer mem.dynamic_arena_destroy(&arena)
 	arena_allocator := mem.dynamic_arena_allocator(&arena)
 	// json_file_name := strings.concatenate({tile_set_file_name, ".json"}, arena_allocator)
-	json_path, path_err := filepath.join({root_dir, "assets/data/tile_sets", tile_set_file_name}, arena_allocator)
+	json_path, path_err := join_file_path({root_dir, "assets/data/tile_sets", tile_set_file_name}, arena_allocator)
 	if path_err != nil {
 		success = false
 		return
@@ -124,7 +123,7 @@ load_tile_set :: proc(tile_set_file_name: string) -> (tile_set: Tile_Set, succes
 		success = false
 		return
 	}
-	texture_file_path, texture_path_err := filepath.join({root_dir, "assets/tile_sets", string(tile_set.texture_name)}, arena_allocator)
+	texture_file_path, texture_path_err := join_file_path({root_dir, "assets/tile_sets", string(tile_set.texture_name)}, arena_allocator)
 	if texture_path_err != nil {
 		success = false
 		return
