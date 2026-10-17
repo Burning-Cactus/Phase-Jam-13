@@ -1,11 +1,12 @@
 package game
 
-import rl "vendor:raylib"
 import "core:encoding/json"
 import "core:fmt"
+import "core:math"
 import "core:math/linalg"
 import "core:mem"
 import "core:strings"
+import rl "vendor:raylib"
 
 DAMAGE_FLASH_DURATION :: 30
 
@@ -16,6 +17,17 @@ Entity_Team :: enum {
 	PLAYER,
 	ENEMY,
 	ALLY,
+}
+
+Entity_Type :: enum {
+	NITYA,
+	// MALICE,
+	// BIBI,
+	// SINON,
+	// WILHELMINA,
+	SAMMY,
+	MALISTOCRAT,
+	BISCUITEER,
 }
 
 // Spawn chances should be determined per dungeon.
@@ -69,13 +81,19 @@ Entity :: struct {
 	team: Entity_Team,
 	pos: Vec2,
 	velocity: Vec2,
+	facing_dir: Vec2,
+
 	max_health: i32,
 	health: i32,
 	attack_power: i32,
 	damage_timer: i32,
-	ko_timer: i32,
+	heal_timer: i32,
+	attack_range: f32,
+	movement_speed: f32,
+
 	current_action: Action_Type,
 	action_charge: f32,
+	ko_timer: i32,
 	is_acting: bool,
 	target_id: i32,
 	effects: bit_set[Status_Effect],
@@ -87,17 +105,6 @@ Entity :: struct {
 	frame_time: f32,
 	facing_left: bool,
 	is_swinging: bool,
-}
-
-Entity_Type :: enum {
-	NITYA,
-	// MALICE,
-	// BIBI,
-	// SINON,
-	// WILHELMINA,
-	SAMMY,
-	MALISTOCRAT,
-	BISCUITEER,
 }
 
 register_entities :: proc() {
@@ -309,24 +316,13 @@ spawn_entity :: proc(type: Entity_Type, pos: Vec2, team: Entity_Team) -> bool {
 				max_health = definition.base_health,
 				health = definition.base_health,
 				attack_power = definition.base_attack,
+				attack_range = 1,
+				movement_speed = 0.02,
 			}
 			return true
 		}
 	}
 	return false
-}
-
-// get_entities_on_screen()
-
-// The returned result will need to live beyond the frame.
-get_entities_in_range :: proc(origin: Vec2, radius: f32, entities: []Entity, allocator := context.allocator, loc := #caller_location) -> [dynamic]i32 {
-	in_range := make([dynamic]i32, 0, len(entities), allocator, loc)
-	for i in i32(0)..<i32(len(entities)) {
-		if entities[i].in_use && linalg.distance(origin, entities[i].pos) < radius {
-			append(&in_range, i)
-		}
-	}
-	return in_range
 }
 
 update_entities :: proc(entities: []Entity) {
@@ -352,6 +348,7 @@ update_entities :: proc(entities: []Entity) {
 			if entity.is_swinging {
 
 			} else {
+				// TODO: Change this when the party system is set up
 				if i == party_leader_idx {
 					input_dir := Vec2{}
 					if rl.IsKeyDown(.A) do input_dir.x -= 1
@@ -362,15 +359,20 @@ update_entities :: proc(entities: []Entity) {
 					input_dir = iso_rotation_matrix * input_dir
 					input_dir = linalg.normalize0(input_dir)
 
-					entity.velocity = input_dir * PLAYER_SPEED
-
-					if test_mode && rl.IsKeyPressed(.RIGHT_BRACKET) {
-						spawn_entity(.SAMMY, entity.pos + {1, 0}, .ENEMY)
-					}
+					entity.velocity = input_dir * entity.movement_speed
+					entity.facing_dir = input_dir
 				} else {
-					update_entity_ai()
+					update_entity_ai(entity)
 				}
+
+				// Calculate animations
 				visible_velocity := render_pos_from_world_pos(entity.velocity)
+				entity.direction = calculate_animation_direction(entity.facing_dir)
+				if entity.facing_dir.x < 0 {
+					entity.facing_left = true
+				} else if entity.facing_dir.x > 0 {
+					entity.facing_left = false
+				}
 				if visible_velocity == {0,0} {
 					switch entity.direction {
 					case .EAST: set_animation(entity, .IDLE_E)
@@ -378,33 +380,68 @@ update_entities :: proc(entities: []Entity) {
 					case .SOUTH: set_animation(entity, .IDLE_S)
 					}
 				} else {
-					entity.direction = calculate_animation_direction(visible_velocity)
 					switch entity.direction {
 					case .EAST: set_animation(entity, .RUN_E)
 					case .NORTH: set_animation(entity, .RUN_N)
 					case .SOUTH: set_animation(entity, .RUN_S)
 					}
-					if visible_velocity.x < 0 {
-						entity.facing_left = true
-					} else if visible_velocity.x > 0 {
-						entity.facing_left = false
-					}
 				}
+
 				entity.pos += entity.velocity
 			}
 			if entity.damage_timer > 0 {
 				entity.damage_timer -= 1
 			}
+			if entity.heal_timer > 0 {
+				entity.heal_timer -= 1
+			}
 		}
 	}
 }
 
-update_entity_ai :: proc() {
-
+update_entity_ai :: proc(actor: ^Entity) {
+	FOLLOW_RANGE :: 10
+	enemy_teams: bit_set[Entity_Team]
+	switch actor.team {
+	case .PLAYER:
+		enemy_teams = {.ENEMY}
+	case .ALLY:
+		enemy_teams = {.ENEMY}
+	case .ENEMY:
+		enemy_teams = {.PLAYER, .ALLY}
+	}
+	if actor.current_action != .NONE {
+		target := entities[actor.target_id]
+		dist_vector := target.pos - actor.pos
+		dist := linalg.length(dist_vector)
+		direction := linalg.normalize0(dist_vector)
+		actor.facing_dir = linalg.normalize0(render_pos_from_world_pos(direction))
+		if dist > FOLLOW_RANGE {
+			actor.current_action = .NONE
+		} else if dist > actor.attack_range + 1 {
+			actor.velocity = direction * actor.movement_speed
+		} else if dist > actor.attack_range - 0.5 {
+			actor.velocity = direction * actor.movement_speed * 0.5
+		} else {
+			actor.velocity = {0, 0}
+		}
+	} else {
+		// Search for enemy
+		nearest_target_idx, found := get_closest_entity_in_range(actor.pos, 6, enemy_teams)
+		if found {
+			set_action(actor, nearest_target_idx, .ATTACK)
+		} else {
+			switch actor.team {
+			case .PLAYER:
+				// party_leader := entities[party_leader_idx] // TODO: Change this when party system is added
+			case .ALLY, .ENEMY:
+			}
+		}
+	}
 }
 
-set_action :: proc(actor: ^Entity, target_id: i32) {
-	actor.current_action = .ATTACK // Set this later when we have multiple possible actions
+set_action :: proc(actor: ^Entity, target_id: i32, action: Action_Type) {
+	actor.current_action = action // Set this later when we have multiple possible actions
 	actor.action_charge = 0
 	actor.target_id = target_id
 }
@@ -439,70 +476,6 @@ end_action :: proc(actor: ^Entity) {
 	actor.is_acting = false
 }
 
-draw_entities :: proc(entities: []Entity) {
-	delta := rl.GetFrameTime()
-	for i in 0..<len(entities) {
-		entity := &(entities[i])
-		if entity.in_use {
-			renderer := entity_renderers[entity.type]
-			mapping := renderer.animation_mappings[entity.animation_state]
-			animation := renderer.animation_rows[mapping]
-			current_frame := animation.frames[entity.animation_frame]
-
-			// Animation calculations
-			if current_menu == nil {
-				entity.frame_time += delta
-				if entity.frame_time >= current_frame.duration {
-					entity.frame_time = 0
-					entity.animation_frame += 1
-					if entity.animation_frame >= i32(len(animation.frames)) {
-						entity.animation_frame = 0
-						entity.is_swinging = false // Hack to account for different entity swing animations. This is not ideal.
-					}
-					current_frame = animation.frames[entity.animation_frame]
-				}
-			}
-
-			// Draw the actual sprite
-			render_pos := cast(Vec2i) render_pos_from_world_pos(entity.pos)
-			sprite_offset := Vec2i{current_frame.width / 2, current_frame.height / 2}
-			source_texture_rec: rl.Rectangle
-			if entity.facing_left {
-				source_texture_rec = {f32(current_frame.x), f32(current_frame.y), -f32(current_frame.width), f32(current_frame.height)}
-			} else {
-				source_texture_rec = {f32(current_frame.x), f32(current_frame.y), f32(current_frame.width), f32(current_frame.height)}
-			}
-			if entity.damage_timer > 0 {
-				damage_frames := cast(f32) entity.damage_timer
-				damage_duration := cast(f32) DAMAGE_FLASH_DURATION
-				rl.SetShaderValue(damage_shader, damage_frames_loc, &damage_frames, .FLOAT)
-				rl.SetShaderValue(damage_shader, damage_duration_loc, &damage_duration, .FLOAT)
-				rl.BeginShaderMode(damage_shader)
-				rl.DrawTextureRec(renderer.texture, source_texture_rec, cast(Vec2) (render_pos - sprite_offset), rl.WHITE)
-				rl.EndShaderMode()
-			} else {
-				rl.DrawTextureRec(renderer.texture, source_texture_rec,	cast(Vec2) (render_pos - sprite_offset), {0xff, 0xff, 0xff, 0xff})
-			}
-
-			// Health bar
-			health_render_pos := render_pos
-			health_render_pos.y -= sprite_offset.y
-			health_bar_rect := rl.Rectangle{f32(health_render_pos.x) - 16, f32(health_render_pos.y) + 6, 32, 4}
-			fill_color, bg_color: rl.Color
-			#partial switch entity.team {
-			case .ALLY:
-				fill_color = {0x6c, 0xc7, 0x44, 0xff}
-				bg_color = {0x34, 0x4f, 0x28, 0xff}
-				draw_bar(f32(entity.health), f32(entity.max_health), health_bar_rect, fill_color, bg_color)
-			case .ENEMY:
-				fill_color = {0xac, 0x20, 0x32, 0xff}
-				bg_color = {0x74, 0x2b, 0x2b, 0xff}
-				draw_bar(f32(entity.health), f32(entity.max_health), health_bar_rect, fill_color, bg_color)
-			}
-		}
-	}
-}
-
 Animation_Direction :: enum {
 	EAST,
 	NORTH,
@@ -519,8 +492,17 @@ damage_entity :: proc(target: ^Entity, power: i32) {
 	target.health -= power
 	target.damage_timer = 30
 	if target.health <= 0 {
+		target.health = 0
 		target.ko_timer = 90
 		target.in_use = false
+	}
+}
+
+heal_entity :: proc(target: ^Entity, power: i32) {
+	target.health += power
+	target.heal_timer = 30
+	if target.health > target.max_health {
+		target.health = target.max_health
 	}
 }
 
@@ -529,4 +511,54 @@ set_animation :: proc(entity: ^Entity, animation: Animation_State) {
 		entity.animation_state = animation
 		entity.animation_frame = 0
 	}
+}
+
+// Utils for getting entities based on criteria.
+
+get_entities_on_screen :: proc(screen_space: rl.Rectangle, allocator := context.allocator, loc := #caller_location) -> [dynamic]i32 {
+	on_screen := make([dynamic]i32, 0, len(entities), allocator, loc)
+	for i in 0..<i32(len(entities)) {
+		target := entities[i]
+		if target.in_use {
+			screen_pos := render_pos_from_world_pos(target.pos)
+			if is_inside_rec(screen_pos, screen_space) do append(&on_screen, i)
+		}
+	}
+	return on_screen
+}
+
+// The returned result will need to live beyond the frame.
+get_entities_in_range :: proc(origin: Vec2, radius: f32, entities: []Entity, allocator := context.allocator, loc := #caller_location) -> [dynamic]i32 {
+	in_range := make([dynamic]i32, 0, len(entities), allocator, loc)
+	for i in 0..<i32(len(entities)) {
+		if entities[i].in_use && linalg.distance(origin, entities[i].pos) < radius {
+			append(&in_range, i)
+		}
+	}
+	return in_range
+}
+
+get_closest_entity_in_range :: proc(origin: Vec2, radius: f32, teams := bit_set[Entity_Team]{.PLAYER, .ALLY, .ENEMY}) -> (entity_idx: i32, found: bool) {
+	current_min: f32 = math.F32_MAX
+	for i in 0..<i32(len(entities)) {
+		target := entities[i]
+		if target.in_use && target.team in teams {
+			distance := linalg.distance(origin, target.pos)
+			if distance < radius && distance < current_min {
+				entity_idx = i
+				found = true
+			}
+		}
+	}
+	return entity_idx, found
+}
+
+get_first_entity_in_range :: proc(origin: Vec2, radius: f32, teams := bit_set[Entity_Team]{.PLAYER, .ALLY, .ENEMY}) -> (entity_idx: i32, found: bool) {
+	for i in 0..<i32(len(entities)) {
+		target := entities[i]
+		if target.in_use && target.team in teams && linalg.distance(origin, target.pos) < radius {
+			return i, true
+		}
+	}
+	return -1, false
 }

@@ -69,9 +69,9 @@ game_update :: proc() {
 			camera.target = linalg.floor(render_pos_from_world_pos(entities[party_leader_idx].pos))
 			rl.BeginMode2D(camera)
 
-			draw_tile_map(tile_map)
 			// TODO: Will need to hide entities behind terrain. Probably will just have to sort each array and do it row-by-row.
-			draw_entities(entities[:])
+			draw_tile_map(tile_map)
+			draw_scene()
 			rl.EndMode2D()
 			draw_ui()
 		}
@@ -108,14 +108,19 @@ game_init :: proc() {
 		offset = {f32(RESOLUTION.x) / 2, f32(RESOLUTION.y) / 2},
 	}
 
-	spawn_entity(.BISCUITEER, {2, 2}, .PLAYER)
+	spawn_entity(.NITYA, {2, 2}, .PLAYER)
 
 	party_leader_idx = 0
-	spawn_entity(.NITYA, {3, 3}, .ALLY)
+	spawn_entity(.BISCUITEER, {3, 3}, .ALLY)
 
 	spawn_entity(.SAMMY, {4, 1}, .ENEMY)
 	spawn_entity(.SAMMY, {8, 1}, .ENEMY)
 	spawn_entity(.MALISTOCRAT, {14, 1}, .ENEMY)
+
+	spawn_item(.COFFEE, {5, 5})
+	spawn_item(.BROCCOLI_EGGS, {5, 7})
+
+	append(&inventory, .COFFEE)
 }
 
 @(export)

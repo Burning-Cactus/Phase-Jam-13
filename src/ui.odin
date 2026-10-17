@@ -39,6 +39,12 @@ Menu :: struct {
 	routine: proc(^Menu),
 }
 
+Menu_Action :: enum {
+	NONE,
+	MOVE,
+	SELECT,
+	CANCEL,
+}
 
 ui_init :: proc() {
 	mem.stack_init(&stack_alloc, buf[:])
@@ -109,16 +115,31 @@ close_all_menus :: proc() {
 	free_all(menu_allocator)
 }
 
-close_battle_menu :: proc() {
-	pop_menu()
-}
-
 @(private) Battle_Options :: enum {
 	ATTACK,
 	// SKILLS,
 	ITEMS,
 	CANCEL,
 }
+
+update_menu :: proc(menu: ^Menu) -> (action: Menu_Action) {
+	if rl.IsKeyPressed(.BACKSPACE) {
+		pop_menu()
+		action = .CANCEL
+	} else if rl.IsKeyPressed(.DOWN) {
+		menu.cursor_idx += 1
+		if menu.cursor_idx >= i32(len(menu.buttons)) do menu.cursor_idx = 0
+		action = .MOVE
+	} else if rl.IsKeyPressed(.UP) {
+		menu.cursor_idx -= 1
+		if menu.cursor_idx < 0 do menu.cursor_idx = cast(i32) (len(menu.buttons) - 1)
+		action = .MOVE
+	} else if rl.IsKeyPressed(.SPACE) {
+		action = .SELECT
+	}
+	return action
+}
+
 
 open_battle_menu :: proc() {
 	next_menu, err := new(Menu, menu_allocator)
@@ -145,41 +166,35 @@ open_battle_menu :: proc() {
 }
 
 update_battle_menu :: proc(menu: ^Menu) {
-	if rl.IsKeyPressed(.BACKSPACE) {
-		close_battle_menu()
-	}
-	if rl.IsKeyPressed(.SPACE) {
+	action := update_menu(menu)
+	if action == .CANCEL do return
+	if action == .SELECT {
 		switch Battle_Options(menu.cursor_idx) {
 		case Battle_Options.ATTACK:
-			open_attack_menu()
+			open_target_menu()
 		case Battle_Options.ITEMS:
+			open_item_menu()
 		case Battle_Options.CANCEL:
-			close_battle_menu()
+			pop_menu()
 		case:
 			fmt.printf("Unimplemented button!\n")
 		}
 	}
-	if rl.IsKeyPressed(.DOWN) {
-		menu.cursor_idx += 1
-		if menu.cursor_idx >= i32(len(menu.buttons)) do menu.cursor_idx = 0
-	} else if rl.IsKeyPressed(.UP) {
-		menu.cursor_idx -= 1
-		if menu.cursor_idx < 0 do menu.cursor_idx = cast(i32) (len(menu.buttons) - 1)
-	}
 	draw_battle_menu(menu)
 }
 
-open_attack_menu :: proc() {
+open_target_menu :: proc() {
 	next_menu, err := new(Menu, menu_allocator)
 	if err != nil {
 		fmt.printf("ERROR: Failed to allocate new menu instance!\n")
 	}
 	next_menu.prev = current_menu
 	current_menu = next_menu
-	current_menu.routine = update_attack_menu
+	current_menu.routine = update_target_menu
 	current_menu.top_left = Vec2i{20, RESOLUTION.y - 120}
-	party_leader := entities[party_leader_idx]
-	available_targets := get_entities_in_range(party_leader.pos, 8, entities[:])
+	screen_space := rl.Rectangle{camera.target.x - f32(RESOLUTION.x) / 2, camera.target.y - f32(RESOLUTION.y) / 2, f32(RESOLUTION.x), f32(RESOLUTION.y)}
+	available_targets := get_entities_on_screen(screen_space)
+	defer delete(available_targets)
 	current_menu.buttons = make([]Menu_Item, len(available_targets), menu_allocator)
 	for i in i32(0)..<i32(len(available_targets)) {
 		enemy_idx := available_targets[i]
@@ -189,7 +204,6 @@ open_attack_menu :: proc() {
 			value = enemy_idx,
 		}
 	}
-	delete(available_targets)
 	if len(current_menu.buttons) > 0 {
 		target := entities[current_menu.buttons[0].value]
 		target_cursor.pos = target.pos
@@ -198,28 +212,20 @@ open_attack_menu :: proc() {
 	}
 }
 
-update_attack_menu :: proc(menu: ^Menu) {
-	if rl.IsKeyPressed(.BACKSPACE) {
-		pop_menu()
-	}
-	if rl.IsKeyPressed(.DOWN) {
-		menu.cursor_idx += 1
-		if menu.cursor_idx >= i32(len(menu.buttons)) do menu.cursor_idx = 0
-		target_cursor.old_pos = target_cursor.pos
-		target_cursor.target_idx = menu.buttons[menu.cursor_idx].value
-		target_cursor.ticks_since_update = 0
-	} else if rl.IsKeyPressed(.UP) {
-		menu.cursor_idx -= 1
-		if menu.cursor_idx < 0 do menu.cursor_idx = cast(i32) (len(menu.buttons) - 1)
+update_target_menu :: proc(menu: ^Menu) {
+	action := update_menu(menu)
+	if action == .CANCEL do return
+	if action == .MOVE {
 		target_cursor.old_pos = target_cursor.pos
 		target_cursor.target_idx = menu.buttons[menu.cursor_idx].value
 		target_cursor.ticks_since_update = 0
 	}
-	if rl.IsKeyPressed(.SPACE) {
-		set_action(&entities[party_leader_idx], menu.buttons[menu.cursor_idx].value)
+	if action == .SELECT {
+		set_action(&entities[party_leader_idx], menu.buttons[menu.cursor_idx].value, .ATTACK)
 		close_all_menus()
 	}
-	draw_battle_menu(menu)
+
+	// Handle target cursor
 	if target_cursor.ticks_since_update < 15 {
 		target_idx := menu.buttons[menu.cursor_idx].value
 		target := entities[target_idx]
@@ -227,29 +233,63 @@ update_attack_menu :: proc(menu: ^Menu) {
 		target_cursor.pos = linalg.lerp(target_cursor.old_pos, target.pos, f32(target_cursor.ticks_since_update) / 15)
 	}
 	CURSOR_HALF_SIZE :: [2]f32{16 / 2, 16 / 2}
-
 	render_pos := render_pos_from_world_pos(target_cursor.pos) - CURSOR_HALF_SIZE
 	render_pos.y -= 24
-
 	rl.BeginMode2D(camera)
 	rl.DrawTextureV(target_cursor_texture, render_pos, {0xff, 0xff, 0xff, 0xff})
 	rl.EndMode2D()
+	draw_battle_menu(menu)
+}
+
+open_item_menu :: proc() {
+	next_menu, err := new(Menu, menu_allocator)
+	if err != nil {
+		fmt.printf("ERROR: Failed to allocate new menu instance!\n")
+	}
+	next_menu.prev = current_menu
+	current_menu = next_menu
+	item_count := i32(len(inventory))
+	current_menu.buttons = make([]Menu_Item, item_count, menu_allocator)
+	for i in 0..<item_count {
+		type := inventory[i]
+		name := item_names[type]
+		current_menu.buttons[i] = {
+			name = name,
+			value = i,
+		}
+	}
+	current_menu.routine = update_item_menu
+	current_menu.top_left = Vec2i{20, RESOLUTION.y - 120}
+}
+
+update_item_menu :: proc(menu: ^Menu) {
+	action := update_menu(menu)
+	if action == .CANCEL do return
+	if action == .SELECT {
+		item_type := inventory[menu.cursor_idx]
+		use_item(item_type, party_leader_idx)
+		ordered_remove(&inventory, menu.cursor_idx)
+		close_all_menus()
+	}
+	draw_battle_menu(menu)
 }
 
 draw_battle_menu :: proc(menu: ^Menu) {
 	menu_size := Vec2{60, 100}
 	rl.DrawTexturePro(menu_texture, {0, 0, 48, 48}, {f32(menu.top_left.x), f32(menu.top_left.y), menu_size.x, menu_size.y}, 0, 0, rl.WHITE)
-	{
-		for i in i32(0)..<i32(len(menu.buttons)) {
-			if i == menu.cursor_idx {
-				rl.DrawText(menu.buttons[i].name, i32(menu.top_left.x) + 5, i32(menu.top_left.y) + i * 20 + 10, 12, {0x6a, 0x1d, 0x13, 0xff})
-			} else {
-				rl.DrawText(menu.buttons[i].name, i32(menu.top_left.x) + 5, i32(menu.top_left.y) + i * 20 + 10, 12, {0x2a, 0x1b, 0x16, 0xff})
-			}
+
+	for i in 0..<i32(len(menu.buttons)) {
+		if i == menu.cursor_idx {
+			rl.DrawText(menu.buttons[i].name, i32(menu.top_left.x) + 5, i32(menu.top_left.y) + i * 20 + 10, 12, {0x6a, 0x1d, 0x13, 0xff})
+		} else {
+			rl.DrawText(menu.buttons[i].name, i32(menu.top_left.x) + 5, i32(menu.top_left.y) + i * 20 + 10, 12, {0x2a, 0x1b, 0x16, 0xff})
 		}
 	}
 }
 
+
+
+// TODO TODO
 main_menu_update :: proc(menu: ^Menu) {
 	Menu_Button :: struct {
 		name: cstring,
