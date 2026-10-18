@@ -3,7 +3,9 @@ package game
 import "core:math"
 import rl "vendor:raylib"
 
-// swamp_music :: #load("embed/music/rainy_day")
+swamp_music_bytes :: #load("../embed/music/夏色ビードロ.mp3")
+
+swamp_music: rl.Music
 
 select_sound: rl.Sound
 navigate_sound: rl.Sound
@@ -27,7 +29,7 @@ adjust_sound_volume :: proc(sound_type: Audio_Type, amount: i32) {
 		rl.SetMasterVolume(f32(master_volume) / 100)
 	case .Sfx:
 		sfx_volume = math.clamp(sfx_volume + amount, 0, 100)
-		vol := f32(sfx_volume) / 100
+		// vol := f32(sfx_volume) / 100
 	case .Ui:
 		ui_volume = math.clamp(ui_volume + amount, 0, 100)
 		vol := f32(ui_volume) / 100
@@ -36,15 +38,22 @@ adjust_sound_volume :: proc(sound_type: Audio_Type, amount: i32) {
 	case .Music:
 		music_volume = math.clamp(music_volume + amount, 0, 100)
 		vol := f32(music_volume) / 100
+		rl.SetMusicVolume(swamp_music, vol)
 	}
 }
 
 load_audio :: proc() {
 	select_sound = rl.LoadSound("assets/sounds/ui_select.wav")
 	navigate_sound = rl.LoadSound("assets/sounds/ui_navigate.wav")
+	swamp_music = rl.LoadMusicStreamFromMemory(".mp3", raw_data(swamp_music_bytes), i32(len(swamp_music_bytes)))
+	rl.SetMasterVolume(f32(master_volume) / 100)
+	rl.SetSoundVolume(select_sound, f32(ui_volume) / 100)
+	rl.SetSoundVolume(navigate_sound, f32(ui_volume) / 100)
+	rl.SetMusicVolume(swamp_music, f32(music_volume) / 100)
 }
 
 unload_audio :: proc() {
 	rl.UnloadSound(select_sound)
 	rl.UnloadSound(navigate_sound)
+	rl.UnloadMusicStream(swamp_music)
 }

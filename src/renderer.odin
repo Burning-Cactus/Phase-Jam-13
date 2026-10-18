@@ -173,7 +173,7 @@ draw_entity :: proc(entity: ^Entity, delta: f32) {
 
 	// Draw the actual sprite
 	render_pos := cast(Vec2i) render_pos_from_world_pos(entity.pos)
-	sprite_offset := Vec2i{current_frame.width / 2, current_frame.height / 2}
+	sprite_offset := Vec2i{current_frame.width / 2, current_frame.height / 2 + renderer.y_offset}
 	source_texture_rec: rl.Rectangle
 	if entity.facing_left {
 		source_texture_rec = {f32(current_frame.x), f32(current_frame.y), -f32(current_frame.width), f32(current_frame.height)}
@@ -196,7 +196,7 @@ draw_entity :: proc(entity: ^Entity, delta: f32) {
 		rl.BeginShaderMode(heal_shader)
 		rl.DrawTextureRec(renderer.texture, source_texture_rec, cast(Vec2) (render_pos - sprite_offset), rl.WHITE)
 		rl.EndShaderMode()
-	} else {
+	} else if false { // TODO: Use this when skills are added.
 		current_frame := f32(entity.living_ticks - entity.action_selected_tick)
 		col := entity_definitions[entity.type].color_code.rgb
 		spell_color := rl.Vector3{f32(col.r) / 255, f32(col.g) / 255, f32(col.b) / 255}
@@ -205,6 +205,8 @@ draw_entity :: proc(entity: ^Entity, delta: f32) {
 		rl.BeginShaderMode(spell_charge_shader)
 		rl.DrawTextureRec(renderer.texture, source_texture_rec,	cast(Vec2) (render_pos - sprite_offset), {0xff, 0xff, 0xff, 0xff})
 		rl.EndShaderMode()
+	} else {
+		rl.DrawTextureRec(renderer.texture, source_texture_rec,	cast(Vec2) (render_pos - sprite_offset), {0xff, 0xff, 0xff, 0xff})
 	}
 
 	// Health bar

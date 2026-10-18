@@ -89,6 +89,7 @@ game_update :: proc() {
 		rl.EndTextureMode()
 		rl.DrawTexturePro(canvas.texture, {0, 0, f32(RESOLUTION.x), f32(-RESOLUTION.y)}, {0, 0, f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())}, {0, 0}, 0, rl.WHITE)
 		rl.EndDrawing()
+		rl.UpdateMusicStream(swamp_music)
 	}
 
 	// Everything on tracking allocator is valid until end-of-frame.
@@ -112,6 +113,8 @@ start_game :: proc(character: Entity_Type) {
 	spawn_item(.BROCCOLI_EGGS, {5, 7})
 
 	append(&inventory, .COFFEE)
+
+	rl.PlayMusicStream(swamp_music)
 }
 
 @(export)

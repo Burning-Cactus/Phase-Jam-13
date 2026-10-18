@@ -72,6 +72,7 @@ Entity_Renderer :: struct {
 	texture: rl.Texture2D,
 	animation_mappings: [Animation_State]i32,
 	animation_rows: []Animation_Row,
+	y_offset: i32,
 }
 
 // Instance of an entity. This should not be serialized except for in save data.
@@ -162,17 +163,18 @@ register_renderers :: proc() {
 	Animation_Info :: struct {
 		type: Entity_Type,
 		sprite_name: cstring,
+		y_offset: i32,
 	}
 
 	json_fmt :: "assets/sprites/%s.json"
 	png_fmt :: "assets/sprites/%s.png"
 
 	definitions :: [?]Animation_Info{
-		{ type = .NITYA, sprite_name = "nitty" },
-		{ type = .BIBI, sprite_name = "bibi" },
-		{ type = .SAMMY, sprite_name = "Sammie" },
-		{ type = .MALISTOCRAT, sprite_name = "Malistocrat" },
-		{ type = .BISCUITEER, sprite_name = "Biscuiteer" },
+		{ type = .NITYA, sprite_name = "nitty", y_offset = 23 },
+		{ type = .BIBI, sprite_name = "bibi", y_offset = 23 },
+		{ type = .SAMMY, sprite_name = "Sammie", y_offset = 8 },
+		{ type = .MALISTOCRAT, sprite_name = "Malistocrat", y_offset = 13 },
+		{ type = .BISCUITEER, sprite_name = "Biscuiteer", y_offset = 14 },
 	}
 
 	arena: mem.Dynamic_Arena
@@ -190,6 +192,7 @@ register_renderers :: proc() {
 				texture = rl.LoadTexture(texture_path),
 				animation_rows = json_rows,
 				animation_mappings = mappings,
+				y_offset = info.y_offset,
 			}
 		}
 	}
@@ -370,11 +373,12 @@ update_entities :: proc(entities: []Entity) {
 					if rl.IsKeyDown(.W) do input_dir.y -= 1
 					if rl.IsKeyDown(.S) do input_dir.y += 1
 
+					entity.facing_dir = linalg.normalize0(input_dir)
+
 					input_dir = iso_rotation_matrix * input_dir
 					input_dir = linalg.normalize0(input_dir)
 
 					entity.velocity = input_dir * entity.movement_speed
-					entity.facing_dir = input_dir
 				} else {
 					update_entity_ai(entity)
 				}
@@ -498,8 +502,8 @@ Animation_Direction :: enum {
 }
 calculate_animation_direction :: proc(vec: Vec2) -> Animation_Direction {
 	direction := linalg.dot(linalg.normalize0(vec), {0, -1})
-	if direction > 0.5 do return .NORTH
-	else if direction < -0.5 do return .SOUTH
+	if direction > 0.8 do return .NORTH
+	else if direction < -0.8 do return .SOUTH
 	else do return .EAST
 }
 

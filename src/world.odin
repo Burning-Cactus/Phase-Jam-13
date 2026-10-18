@@ -1,0 +1,6 @@
+package game
+
+
+Floor :: struct {
+
+}

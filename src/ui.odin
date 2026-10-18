@@ -398,11 +398,9 @@ update_character_select :: proc(menu: ^Menu) {
 		middle_x := offset_size * i + offset_size / 2
 		x := middle_x - button_width / 2
 		top_left := Vec2i{x, 6}
+		rl.DrawRectangle(top_left.x, top_left.y, button_width, button_height, {0x70, 0x70, 0x70, 0x80})
 		if panel.texture.id > 0 {
-			rl.DrawTexture(panel.texture, top_left.x, top_left.y, rl.WHITE)
-		} else {
-			rl.DrawRectangle(top_left.x, top_left.y, button_width, button_height, {0x90, 0x90, 0x90, 0xff})
-			rl.DrawText(panel.name, middle_x - 3 * i32(len(panel.name)), button_height - 30, 12, rl.WHITE)
+			rl.DrawTexture(panel.texture, top_left.x, top_left.y, rl.WHITE if !menu.buttons[i].disabled else {0xff, 0xff, 0xff, 0x80})
 		}
 		if menu.cursor_idx == i {
 			rl.DrawRectangleLinesEx({f32(top_left.x), f32(top_left.y), button_width, button_height}, 4.0, rl.WHITE)
@@ -444,7 +442,7 @@ audio_sliders := [4]Audio_Slider {
 	{"Master", .Master},
 	{"SFX", .Sfx},
 	{"UI", .Ui},
-	{"Music", .Music}
+	{"Music", .Music},
 }
 
 open_options_menu :: proc() {
