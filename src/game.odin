@@ -30,6 +30,8 @@ main_character: Entity_Type
 canvas: rl.RenderTexture2D
 camera: rl.Camera2D
 
+title_screen_texture: rl.Texture2D
+
 // Use this for placing enemies and such when testing
 test_mode := false
 
@@ -48,6 +50,7 @@ game_update :: proc() {
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.BLACK)
 		rl.BeginTextureMode(canvas)
+		rl.DrawTexture(title_screen_texture, 0, 0, rl.WHITE)
 		if current_menu != nil {
 			current_menu.routine(current_menu)
 		} else if rl.IsKeyPressed(.SPACE) {
@@ -115,6 +118,7 @@ start_game :: proc(character: Entity_Type) {
 game_init_window :: proc() {
 	rl.SetConfigFlags({.WINDOW_RESIZABLE, .VSYNC_HINT})
 	rl.InitWindow(WINDOW_SIZE.x, WINDOW_SIZE.y, "Saga Mystery Dungeon")
+	rl.InitAudioDevice()
 	rl.SetWindowPosition(200, 200)
 	rl.SetTargetFPS(120)
 	rl.SetExitKey(nil)
@@ -123,10 +127,12 @@ game_init_window :: proc() {
 @(export)
 game_init :: proc() {
 	menu_texture = rl.LoadTexture("assets/Map-Ui-Palette.png")
+	title_screen_texture = rl.LoadTexture("assets/ui/title_screen.png")
 	create_tile_map(&tile_map)
 	register_entities()
 	ui_init()
 	load_shaders()
+	load_audio()
 
 	canvas = rl.LoadRenderTexture(RESOLUTION.x, RESOLUTION.y)
 	camera = {
@@ -154,12 +160,15 @@ game_shutdown :: proc() {
 	unregister_entities()
 	ui_deinit()
 	unload_shaders()
+	unload_audio()
 	rl.UnloadTexture(menu_texture)
 	rl.UnloadRenderTexture(canvas)
+	rl.UnloadTexture(title_screen_texture)
 }
 
 @(export)
 game_shutdown_window :: proc() {
+	rl.CloseAudioDevice()
 	rl.CloseWindow()
 }
 

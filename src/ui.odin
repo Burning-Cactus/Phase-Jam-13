@@ -52,10 +52,10 @@ Menu :: struct {
 }
 
 Menu_Action :: enum {
-	NONE,
-	MOVE,
-	SELECT,
-	CANCEL,
+	None,
+	Move,
+	Select,
+	Cancel,
 }
 
 ui_init :: proc() {
@@ -151,17 +151,21 @@ close_all_menus :: proc() {
 update_vertical_menu :: proc(menu: ^Menu) -> (action: Menu_Action) {
 	if rl.IsKeyPressed(.BACKSPACE) {
 		pop_menu()
-		action = .CANCEL
+		action = .Cancel
+		rl.PlaySound(select_sound)
 	} else if rl.IsKeyPressed(.DOWN) {
 		menu.cursor_idx += 1
 		if menu.cursor_idx >= i32(len(menu.buttons)) do menu.cursor_idx = 0
-		action = .MOVE
+		action = .Move
+		rl.PlaySound(navigate_sound)
 	} else if rl.IsKeyPressed(.UP) {
 		menu.cursor_idx -= 1
 		if menu.cursor_idx < 0 do menu.cursor_idx = cast(i32) (len(menu.buttons) - 1)
-		action = .MOVE
+		action = .Move
+		rl.PlaySound(navigate_sound)
 	} else if rl.IsKeyPressed(.SPACE) {
-		action = .SELECT
+		action = .Select
+		rl.PlaySound(select_sound)
 	}
 	return action
 }
@@ -192,8 +196,8 @@ open_battle_menu :: proc() {
 
 update_battle_menu :: proc(menu: ^Menu) {
 	action := update_vertical_menu(menu)
-	if action == .CANCEL do return
-	if action == .SELECT {
+	if action == .Cancel do return
+	if action == .Select {
 		switch Battle_Options(menu.cursor_idx) {
 		case Battle_Options.ATTACK:
 			open_target_menu()
@@ -239,13 +243,13 @@ open_target_menu :: proc() {
 
 update_target_menu :: proc(menu: ^Menu) {
 	action := update_vertical_menu(menu)
-	if action == .CANCEL do return
-	if action == .MOVE {
+	if action == .Cancel do return
+	if action == .Move {
 		target_cursor.old_pos = target_cursor.pos
 		target_cursor.target_idx = menu.buttons[menu.cursor_idx].value
 		target_cursor.ticks_since_update = 0
 	}
-	if action == .SELECT {
+	if action == .Select {
 		set_action(&entities[party_leader_idx], menu.buttons[menu.cursor_idx].value, .ATTACK)
 		close_all_menus()
 	}
@@ -289,8 +293,8 @@ open_item_menu :: proc() {
 
 update_item_menu :: proc(menu: ^Menu) {
 	action := update_vertical_menu(menu)
-	if action == .CANCEL do return
-	if action == .SELECT {
+	if action == .Cancel do return
+	if action == .Select {
 		item_type := inventory[menu.cursor_idx]
 		use_item(item_type, party_leader_idx)
 		ordered_remove(&inventory, menu.cursor_idx)
@@ -319,12 +323,16 @@ open_main_menu :: proc() {
 	}
 	next_menu.prev = current_menu
 	current_menu = next_menu
-	current_menu.buttons = make([]Menu_Item, 2, menu_allocator)
+	current_menu.buttons = make([]Menu_Item, 3, menu_allocator)
 	current_menu.buttons[0] = {
 		name = "Start Game",
 	}
 	current_menu.buttons[1] = {
 		name = "Continue",
+		disabled = true,
+	}
+	current_menu.buttons[2] = {
+		name = "Options",
 	}
 	current_menu.routine = update_main_menu
 }
@@ -332,10 +340,12 @@ open_main_menu :: proc() {
 // TODO TODO
 update_main_menu :: proc(menu: ^Menu) {
 	action := update_vertical_menu(menu)
-	if action == .SELECT {
+	if action == .Select {
 		switch menu.cursor_idx {
 		case 0:
 			open_character_select()
+		case 2:
+			open_options_menu()
 		case:
 			fmt.printf("Unimplemented button!\n")
 		}
@@ -369,11 +379,10 @@ open_character_select :: proc() {
 	current_menu.routine = update_character_select
 }
 
-// TODO: Should this be a menu?
 update_character_select :: proc(menu: ^Menu) {
 	action := update_horizontal_menu(menu)
-	if action == .CANCEL do return
-	if action == .SELECT {
+	if action == .Cancel do return
+	if action == .Select {
 		close_all_menus()
 		start_game(character_select_panels[menu.cursor_idx].character_type)
 		return
@@ -404,23 +413,101 @@ update_character_select :: proc(menu: ^Menu) {
 update_horizontal_menu :: proc(menu: ^Menu) -> (action: Menu_Action) {
 	if rl.IsKeyPressed(.BACKSPACE) {
 		pop_menu()
-		action = .CANCEL
+		action = .Cancel
 	} else if rl.IsKeyPressed(.RIGHT) {
 		for _ in 0..<len(menu.buttons) {
 			menu.cursor_idx += 1
 			if menu.cursor_idx >= i32(len(menu.buttons)) do menu.cursor_idx = 0
 			if !menu.buttons[menu.cursor_idx].disabled do break
 		}
-		action = .MOVE
+		action = .Move
 	} else if rl.IsKeyPressed(.LEFT) {
 		for _ in 0..<len(menu.buttons) {
 			menu.cursor_idx -= 1
 			if menu.cursor_idx < 0 do menu.cursor_idx = cast(i32) (len(menu.buttons) - 1)
 			if !menu.buttons[menu.cursor_idx].disabled do break
 		}
-		action = .MOVE
+		action = .Move
 	} else if rl.IsKeyPressed(.SPACE) {
-		action = .SELECT
+		action = .Select
 	}
 	return action
+}
+
+@(private)
+Audio_Slider :: struct {
+	name: cstring,
+	type: Audio_Type,
+}
+
+audio_sliders := [4]Audio_Slider {
+	{"Master", .Master},
+	{"SFX", .Sfx},
+	{"UI", .Ui},
+	{"Music", .Music}
+}
+
+open_options_menu :: proc() {
+	next_menu, err := new(Menu, menu_allocator)
+	if err != nil {
+		fmt.printf("ERROR: Failed to allocate new menu instance!\n")
+	}
+	next_menu.prev = current_menu
+	current_menu = next_menu
+	current_menu.buttons = make([]Menu_Item, 5, menu_allocator)
+	current_menu.buttons[4] = {name = "Back"}
+	current_menu.routine = update_options_menu
+}
+
+update_options_menu :: proc(menu: ^Menu) {
+	action := update_vertical_menu(menu)
+	if action == .Cancel do return
+	if action == .Select && menu.cursor_idx == 4 {
+		pop_menu()
+		return
+	}
+	if menu.cursor_idx >= 0 && menu.cursor_idx < 4 {
+		adjustment_value: i32 = 0
+		if rl.IsKeyDown(.LEFT) {
+			adjustment_value -= 1
+		}
+		if rl.IsKeyDown(.RIGHT) {
+			adjustment_value += 1
+		}
+		if adjustment_value != 0 {
+			adjust_sound_volume(audio_sliders[menu.cursor_idx].type, adjustment_value)
+		}
+	}
+
+	top_left := Vec2i{100, 40}
+
+	for i in 0..<i32(4) {
+		slider := audio_sliders[i]
+		current_value: i32
+		switch slider.type {
+		case .Master:
+			current_value = master_volume
+		case .Sfx:
+			current_value = sfx_volume
+		case .Ui:
+			current_value = ui_volume
+		case .Music:
+			current_value = music_volume
+		}
+		rl.DrawText(slider.name, top_left.x, top_left.y, 12, rl.WHITE)
+		top_left.y += 15
+		bar_size := rl.Rectangle{f32(top_left.x), f32(top_left.y), 80, 6}
+		draw_bar(f32(current_value), 100, bar_size, {0xd0, 0xd0, 0xd0, 0xcc}, {0x80, 0x80, 0x80, 0xa8})
+		if i == menu.cursor_idx {
+			rl.DrawRectangleLinesEx(bar_size, 1, rl.WHITE)
+		}
+		top_left.y += 15
+	}
+
+	top_left.y += 20
+	if menu.cursor_idx == 4 {
+		rl.DrawText(menu.buttons[4].name, top_left.x + 5, top_left.y, 12, {0x6a, 0x1d, 0x13, 0xff})
+	} else {
+		rl.DrawText(menu.buttons[4].name, top_left.x, top_left.y, 12, {0x2a, 0x1b, 0x16, 0xff})
+	}
 }

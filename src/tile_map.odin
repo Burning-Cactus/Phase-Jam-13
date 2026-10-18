@@ -30,14 +30,14 @@ Tile_Set :: struct {
 }
 
 create_tile_map :: proc(tile_map: ^Tile_Map) {
-	path :: "assets/tile_sets/warehouse_floor.png"
+	path :: "assets/tile_sets/swamp_tileset.png"
 	texture := rl.LoadTexture(path)
 	tile_set := Tile_Set {
 		texture = texture,
-		atlas_width = texture.width / TILE_SIZE.x,
-		atlas_height = texture.height / TILE_SIZE.y,
-		tile_width = TILE_SIZE.x,
-		tile_height = TILE_SIZE.y,
+		atlas_width = texture.width / 64,
+		atlas_height = texture.height / 64,
+		tile_width = 64,
+		tile_height = 64,
 	}
 	tile_map.tile_set = tile_set
 
@@ -85,17 +85,18 @@ unload_tile_map :: proc(tile_map: Tile_Map) {
 }
 
 draw_tile_map :: proc(tile_map_in: Tile_Map) {
+	tile_set := tile_map.tile_set
 	for j in 0..<tile_map_in.height {
 		for i in 0..<tile_map_in.width {
 			tile_idx := tile_map_in.tiles[j * tile_map_in.width + i]
-			tile_x := i32(tile_idx) %% tile_map_in.tile_set.atlas_width
-			tile_y := i32(tile_idx) / tile_map_in.tile_set.atlas_width
+			tile_x := i32(tile_idx) %% tile_set.atlas_width
+			tile_y := i32(tile_idx) / tile_set.atlas_width
 
 			render_pos := render_pos_from_world_pos({f32(i), f32(j)} + tile_map.pos)
 
 			// What? Make sure you're properly calculating the row and height.
-			rl.DrawTextureRec(tile_map_in.tile_set.texture, {f32(tile_x * TILE_SIZE.x), f32(tile_y * TILE_SIZE.y),
-				f32(TILE_SIZE.x), f32(TILE_SIZE.y)},
+			rl.DrawTextureRec(tile_set.texture, {f32(tile_x * tile_set.tile_width), f32(tile_y * tile_set.tile_height),
+				f32(tile_set.tile_width), f32(tile_set.tile_height)},
 				render_pos,
 				{0xff, 0xff, 0xff, 0xff})
 		}
