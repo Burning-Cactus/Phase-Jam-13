@@ -22,7 +22,7 @@ Entity_Team :: enum {
 Entity_Type :: enum {
 	NITYA,
 	// MALICE,
-	// BIBI,
+	BIBI,
 	// SINON,
 	// WILHELMINA,
 	SAMMY,
@@ -82,6 +82,7 @@ Entity :: struct {
 	pos: Vec2,
 	velocity: Vec2,
 	facing_dir: Vec2,
+	living_ticks: u32,
 
 	max_health: i32,
 	health: i32,
@@ -97,6 +98,7 @@ Entity :: struct {
 	is_acting: bool,
 	target_id: i32,
 	effects: bit_set[Status_Effect],
+	action_selected_tick: u32,
 
 	// Properties related to animation
 	animation_state: Animation_State,
@@ -113,12 +115,21 @@ register_entities :: proc() {
 		sprite_name = "nitty",
 		color_code = rl.GetColor(0x5d8000ff),
 		base_health = 40,
-		base_attack = 8,
+		base_attack = 12,
+		entity_width = 32,
+	}
+	entity_definitions[.BIBI] = {
+		name = "Bibi",
+		sprite_name = "bibi",
+		color_code = rl.GetColor(0xbd2d4eff),
+		base_health = 45,
+		base_attack = 10,
 		entity_width = 32,
 	}
 	entity_definitions[.SAMMY] = {
 		name = "Sammy",
 		sprite_name = "Sammie",
+		color_code = rl.GetColor(0x5d8000ff),
 		base_health = 35,
 		base_attack = 4,
 		entity_width = 32,
@@ -126,6 +137,7 @@ register_entities :: proc() {
 	entity_definitions[.MALISTOCRAT] = {
 		name = "Malistocrat",
 		sprite_name = "Malistocrat",
+		color_code = rl.GetColor(0x8f2555ff),
 		base_health = 25,
 		base_attack = 8,
 		entity_width = 32,
@@ -133,6 +145,7 @@ register_entities :: proc() {
 	entity_definitions[.BISCUITEER] = {
 		name = "Biscuiteer",
 		sprite_name = "Biscuiteer",
+		color_code = rl.GetColor(0xbd2d4eff),
 		base_health = 30,
 		base_attack = 6,
 		entity_width = 32,
@@ -156,6 +169,7 @@ register_renderers :: proc() {
 
 	definitions :: [?]Animation_Info{
 		{ type = .NITYA, sprite_name = "nitty" },
+		{ type = .BIBI, sprite_name = "bibi" },
 		{ type = .SAMMY, sprite_name = "Sammie" },
 		{ type = .MALISTOCRAT, sprite_name = "Malistocrat" },
 		{ type = .BISCUITEER, sprite_name = "Biscuiteer" },
@@ -395,6 +409,7 @@ update_entities :: proc(entities: []Entity) {
 			if entity.heal_timer > 0 {
 				entity.heal_timer -= 1
 			}
+			entity.living_ticks += 1
 		}
 	}
 }
@@ -443,6 +458,7 @@ update_entity_ai :: proc(actor: ^Entity) {
 set_action :: proc(actor: ^Entity, target_id: i32, action: Action_Type) {
 	actor.current_action = action // Set this later when we have multiple possible actions
 	actor.action_charge = 0
+	actor.action_selected_tick = actor.living_ticks
 	actor.target_id = target_id
 }
 
@@ -465,8 +481,7 @@ start_action :: proc(actor: ^Entity) {
 // This'll probably be a dynamic dispatch later
 update_action :: proc(actor: ^Entity) {
 	if actor.is_swinging == false {
-		target := &entities[actor.target_id]
-		damage_entity(target, actor.attack_power)
+		damage_entity(actor.target_id, actor.attack_power)
 		end_action(actor)
 	}
 }
@@ -488,9 +503,11 @@ calculate_animation_direction :: proc(vec: Vec2) -> Animation_Direction {
 	else do return .EAST
 }
 
-damage_entity :: proc(target: ^Entity, power: i32) {
+damage_entity :: proc(target_idx: i32, power: i32) {
+	target := &entities[target_idx]
 	target.health -= power
 	target.damage_timer = 30
+	add_damage_marker(target_idx, power, false)
 	if target.health <= 0 {
 		target.health = 0
 		target.ko_timer = 90
@@ -498,9 +515,11 @@ damage_entity :: proc(target: ^Entity, power: i32) {
 	}
 }
 
-heal_entity :: proc(target: ^Entity, power: i32) {
+heal_entity :: proc(target_idx: i32, power: i32) {
+	target := &entities[target_idx]
 	target.health += power
 	target.heal_timer = 30
+	add_damage_marker(target_idx, power, true)
 	if target.health > target.max_health {
 		target.health = target.max_health
 	}

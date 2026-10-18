@@ -19,13 +19,14 @@ root_dir: string = ""
 run: bool = true
 time_since_update: f32 = 0
 
-current_screen: Screen = .LEVEL
+current_screen: Screen = .TITLE_SCREEN
 
 entities := [100]Entity{}
 party_member_ids := [MAX_PARTY_SIZE]i32{}
 party_leader_idx: i32 = 0
 
-menu_texture: rl.Texture2D
+main_character: Entity_Type
+
 canvas: rl.RenderTexture2D
 camera: rl.Camera2D
 
@@ -34,7 +35,6 @@ test_mode := false
 
 Screen :: enum {
 	TITLE_SCREEN,
-	CHARACTER_SELECT,
 	LEVEL,
 }
 
@@ -45,9 +45,17 @@ Vec2i :: [2]i32
 game_update :: proc() {
 	switch current_screen {
 	case .TITLE_SCREEN:
-		// main_menu_update()
-	case .CHARACTER_SELECT:
-		// character_select_update()
+		rl.BeginDrawing()
+		rl.ClearBackground(rl.BLACK)
+		rl.BeginTextureMode(canvas)
+		if current_menu != nil {
+			current_menu.routine(current_menu)
+		} else if rl.IsKeyPressed(.SPACE) {
+			open_main_menu()
+		}
+		rl.EndTextureMode()
+		rl.DrawTexturePro(canvas.texture, {0, 0, f32(RESOLUTION.x), f32(-RESOLUTION.y)}, {0, 0, f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())}, {0, 0}, 0, rl.WHITE)
+		rl.EndDrawing()
 	case .LEVEL:
 		time_since_update += rl.GetFrameTime()
 		for time_since_update > UPDATE_SPEED {
@@ -84,6 +92,25 @@ game_update :: proc() {
 	free_all(context.temp_allocator)
 }
 
+start_game :: proc(character: Entity_Type) {
+	main_character = character
+	current_screen = .LEVEL
+
+	spawn_entity(character, {2, 2}, .PLAYER)
+
+	party_leader_idx = 0
+	spawn_entity(.BISCUITEER, {3, 3}, .ALLY)
+
+	spawn_entity(.SAMMY, {4, 1}, .ENEMY)
+	spawn_entity(.SAMMY, {8, 1}, .ENEMY)
+	spawn_entity(.MALISTOCRAT, {14, 1}, .ENEMY)
+
+	spawn_item(.COFFEE, {5, 5})
+	spawn_item(.BROCCOLI_EGGS, {5, 7})
+
+	append(&inventory, .COFFEE)
+}
+
 @(export)
 game_init_window :: proc() {
 	rl.SetConfigFlags({.WINDOW_RESIZABLE, .VSYNC_HINT})
@@ -107,20 +134,6 @@ game_init :: proc() {
 		zoom = 1.0,
 		offset = {f32(RESOLUTION.x) / 2, f32(RESOLUTION.y) / 2},
 	}
-
-	spawn_entity(.NITYA, {2, 2}, .PLAYER)
-
-	party_leader_idx = 0
-	spawn_entity(.BISCUITEER, {3, 3}, .ALLY)
-
-	spawn_entity(.SAMMY, {4, 1}, .ENEMY)
-	spawn_entity(.SAMMY, {8, 1}, .ENEMY)
-	spawn_entity(.MALISTOCRAT, {14, 1}, .ENEMY)
-
-	spawn_item(.COFFEE, {5, 5})
-	spawn_item(.BROCCOLI_EGGS, {5, 7})
-
-	append(&inventory, .COFFEE)
 }
 
 @(export)

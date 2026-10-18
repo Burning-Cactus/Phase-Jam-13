@@ -14,9 +14,20 @@ import "core:math/linalg"
 @(private) menu_allocator: mem.Allocator
 
 current_menu: ^Menu
+menu_texture: rl.Texture2D
 
-target_cursor: Target_Cursor
-target_cursor_texture: rl.Texture2D
+@(private) target_cursor: Target_Cursor
+@(private) target_cursor_texture: rl.Texture2D
+
+@(private) character_select_panels: [5]Character_Panel
+
+@(private)
+Character_Panel :: struct {
+	name: cstring,
+	color: rl.Color,
+	texture: rl.Texture2D,
+	character_type: Entity_Type,
+}
 
 Target_Cursor :: struct {
 	pos: Vec2,
@@ -29,6 +40,7 @@ Target_Cursor :: struct {
 Menu_Item :: struct {
 	name: cstring,
 	value: i32,
+	disabled: bool,
 }
 
 Menu :: struct {
@@ -49,11 +61,25 @@ Menu_Action :: enum {
 ui_init :: proc() {
 	mem.stack_init(&stack_alloc, buf[:])
 	menu_allocator = mem.stack_allocator(&stack_alloc)
+
 	target_cursor_texture = rl.LoadTexture("assets/ui/selection_arrow.png")
+
+	character_select_panels = {
+		{"Wilhelmina Frost", {0x98, 0xcb, 0xd6, 0xff}, {}, .NITYA},
+		{"Sinon Sinfonia", {0x3e, 0xd0, 0xf2, 0xff}, {}, .NITYA},
+		{"Bibi Biscuit", {0xbd, 0x2d, 0x4e, 0xff}, {}, .BIBI},
+		{"Malice Evermore", {0x8f, 0x25, 0x55, 0xff}, {}, .NITYA},
+		{"Nitya Nil", {0x5d, 0x80, 0x00, 0xff}, {}, .NITYA},
+	}
+	character_select_panels[1].texture = rl.LoadTexture("assets/ui/character_select_sinon.png")
+	character_select_panels[2].texture = rl.LoadTexture("assets/ui/character_select_bibi.png")
+	character_select_panels[4].texture = rl.LoadTexture("assets/ui/character_select_nitya.png")
 }
 
 ui_deinit :: proc() {
 	rl.UnloadTexture(target_cursor_texture)
+	rl.UnloadTexture(character_select_panels[2].texture)
+	rl.UnloadTexture(character_select_panels[4].texture)
 }
 
 draw_ui :: proc() {
@@ -122,7 +148,7 @@ close_all_menus :: proc() {
 	CANCEL,
 }
 
-update_menu :: proc(menu: ^Menu) -> (action: Menu_Action) {
+update_vertical_menu :: proc(menu: ^Menu) -> (action: Menu_Action) {
 	if rl.IsKeyPressed(.BACKSPACE) {
 		pop_menu()
 		action = .CANCEL
@@ -139,7 +165,6 @@ update_menu :: proc(menu: ^Menu) -> (action: Menu_Action) {
 	}
 	return action
 }
-
 
 open_battle_menu :: proc() {
 	next_menu, err := new(Menu, menu_allocator)
@@ -166,7 +191,7 @@ open_battle_menu :: proc() {
 }
 
 update_battle_menu :: proc(menu: ^Menu) {
-	action := update_menu(menu)
+	action := update_vertical_menu(menu)
 	if action == .CANCEL do return
 	if action == .SELECT {
 		switch Battle_Options(menu.cursor_idx) {
@@ -213,7 +238,7 @@ open_target_menu :: proc() {
 }
 
 update_target_menu :: proc(menu: ^Menu) {
-	action := update_menu(menu)
+	action := update_vertical_menu(menu)
 	if action == .CANCEL do return
 	if action == .MOVE {
 		target_cursor.old_pos = target_cursor.pos
@@ -263,7 +288,7 @@ open_item_menu :: proc() {
 }
 
 update_item_menu :: proc(menu: ^Menu) {
-	action := update_menu(menu)
+	action := update_vertical_menu(menu)
 	if action == .CANCEL do return
 	if action == .SELECT {
 		item_type := inventory[menu.cursor_idx]
@@ -287,93 +312,115 @@ draw_battle_menu :: proc(menu: ^Menu) {
 	}
 }
 
-
+open_main_menu :: proc() {
+	next_menu, err := new(Menu, menu_allocator)
+	if err != nil {
+		fmt.printf("ERROR: Failed to allocate new menu instance!\n")
+	}
+	next_menu.prev = current_menu
+	current_menu = next_menu
+	current_menu.buttons = make([]Menu_Item, 2, menu_allocator)
+	current_menu.buttons[0] = {
+		name = "Start Game",
+	}
+	current_menu.buttons[1] = {
+		name = "Continue",
+	}
+	current_menu.routine = update_main_menu
+}
 
 // TODO TODO
-main_menu_update :: proc(menu: ^Menu) {
-	Menu_Button :: struct {
-		name: cstring,
-	}
-	buttons := []Menu_Button {
-		{"Start Game"},
-		{"Continue"},
-	}
-	if rl.IsKeyPressed(.SPACE) {
+update_main_menu :: proc(menu: ^Menu) {
+	action := update_vertical_menu(menu)
+	if action == .SELECT {
 		switch menu.cursor_idx {
 		case 0:
-			current_screen = .CHARACTER_SELECT
+			open_character_select()
 		case:
 			fmt.printf("Unimplemented button!\n")
+		}
+	}
 
-		}
-	} else if rl.IsKeyPressed(.DOWN) {
-		menu.cursor_idx += 1
-		if menu.cursor_idx >= i32(len(buttons)) do menu.cursor_idx = 0
-	} else if rl.IsKeyPressed(.UP) {
-		menu.cursor_idx -= 1
-		if menu.cursor_idx < 0 do menu.cursor_idx = cast(i32) (len(buttons) - 1)
-	}
-	rl.BeginDrawing()
-	rl.BeginTextureMode(canvas)
-	{
-		rl.ClearBackground({0xad, 0x96, 0x74, 0xff})
-		top_left := Vec2i{100, 100}
-		for i in i32(0)..<i32(len(buttons)) {
-			button := buttons[i]
-			if menu.cursor_idx == i {
-				rl.DrawText(button.name, top_left.x + 5, top_left.y + i * 20, 12, {0x6a, 0x1d, 0x13, 0xff})
-			} else {
-				rl.DrawText(button.name, top_left.x, top_left.y + i * 20, 12, {0x2a, 0x1b, 0x16, 0xff})
-			}
+	rl.ClearBackground({0xad, 0x96, 0x74, 0xff})
+	top_left := Vec2i{100, 100}
+	for i in i32(0)..<i32(len(menu.buttons)) {
+		button := menu.buttons[i]
+		if menu.cursor_idx == i {
+			rl.DrawText(button.name, top_left.x + 5, top_left.y + i * 20, 12, {0x6a, 0x1d, 0x13, 0xff})
+		} else {
+			rl.DrawText(button.name, top_left.x, top_left.y + i * 20, 12, {0x2a, 0x1b, 0x16, 0xff})
 		}
 	}
-	rl.EndTextureMode()
-	rl.DrawTexturePro(canvas.texture, {0, 0, f32(RESOLUTION.x), f32(-RESOLUTION.y)}, {0, 0, f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())}, {0, 0}, 0, rl.WHITE)
-	rl.EndDrawing()
+}
+
+open_character_select :: proc() {
+	next_menu, err := new(Menu, menu_allocator)
+	if err != nil {
+		fmt.printf("ERROR: Failed to allocate new menu instance!\n")
+	}
+	next_menu.prev = current_menu
+	current_menu = next_menu
+	current_menu.buttons = make([]Menu_Item, 5, menu_allocator)
+	current_menu.buttons[0].disabled = true
+	current_menu.buttons[1].disabled = true
+	current_menu.buttons[3].disabled = true
+	current_menu.cursor_idx = 2
+
+	current_menu.routine = update_character_select
 }
 
 // TODO: Should this be a menu?
-character_select_update :: proc() {
-	cursor_idx: i32
-	Character_Panel :: struct {
-		name: cstring,
-		color: rl.Color,
-	}
-	panels := []Character_Panel {
-		{"Wilhelmina Frost", {0x98, 0xcb, 0xd6, 0xff}},
-		{"Sinon Sinfonia", {0x3e, 0xd0, 0xf2, 0xff}},
-		{"Bibi Biscuit", {0xbd, 0x2d, 0x4e, 0xff}},
-		{"Malice Evermore", {0x8f, 0x25, 0x55, 0xff}},
-		{"Nitya Nil", {0x5d, 0x80, 0x00, 0xff}},
-	}
-	if rl.IsKeyPressed(.SPACE) {
-		current_screen = .LEVEL
-	} else if rl.IsKeyPressed(.RIGHT) {
-		cursor_idx += 1
-		if cursor_idx >= i32(len(panels)) do cursor_idx = 0
-	} else if rl.IsKeyPressed(.LEFT) {
-		cursor_idx -= 1
-		if cursor_idx < 0 do cursor_idx = cast(i32) (len(panels) - 1)
+update_character_select :: proc(menu: ^Menu) {
+	action := update_horizontal_menu(menu)
+	if action == .CANCEL do return
+	if action == .SELECT {
+		close_all_menus()
+		start_game(character_select_panels[menu.cursor_idx].character_type)
+		return
 	}
 
-	rl.BeginDrawing()
-	rl.BeginTextureMode(canvas)
-		rl.ClearBackground({0x2a, 0x17, 0x24, 0xff})
-		button_width :: 90
-		button_height :: 200
-		offset_size :: RESOLUTION.x / 5
-		for i: i32 = 0; i < i32(len(panels)); i += 1 {
-			panel := panels[i]
-			middle_x := offset_size * i + offset_size / 2
-			x := middle_x - button_width / 2
-			top_left := Vec2i{x, 6}
-			rl.DrawRectangle(top_left.x, top_left.y, button_width, button_height, panel.color)
-			rl.DrawText(panel.name, middle_x - 30, button_height - 30, 12, rl.WHITE)
-			if cursor_idx == i {
-				rl.DrawRectangleLinesEx({f32(top_left.x), f32(top_left.y), button_width, button_height}, 4.0, rl.WHITE)
-			}
+	rl.ClearBackground({0x2a, 0x17, 0x24, 0xff})
+	button_width :: 90
+	button_height :: 200
+	offset_size :: RESOLUTION.x / 5
+
+	for i in 0..<i32(len(menu.buttons)) {
+		panel := character_select_panels[i]
+		middle_x := offset_size * i + offset_size / 2
+		x := middle_x - button_width / 2
+		top_left := Vec2i{x, 6}
+		if panel.texture.id > 0 {
+			rl.DrawTexture(panel.texture, top_left.x, top_left.y, rl.WHITE)
+		} else {
+			rl.DrawRectangle(top_left.x, top_left.y, button_width, button_height, {0x90, 0x90, 0x90, 0xff})
+			rl.DrawText(panel.name, middle_x - 3 * i32(len(panel.name)), button_height - 30, 12, rl.WHITE)
 		}
-	rl.EndTextureMode()
-	rl.DrawTexturePro(canvas.texture, {0, 0, f32(RESOLUTION.x), f32(-RESOLUTION.y)}, {0, 0, f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())}, {0, 0}, 0, rl.WHITE)
-	rl.EndDrawing()
+		if menu.cursor_idx == i {
+			rl.DrawRectangleLinesEx({f32(top_left.x), f32(top_left.y), button_width, button_height}, 4.0, rl.WHITE)
+		}
+	}
+}
+
+update_horizontal_menu :: proc(menu: ^Menu) -> (action: Menu_Action) {
+	if rl.IsKeyPressed(.BACKSPACE) {
+		pop_menu()
+		action = .CANCEL
+	} else if rl.IsKeyPressed(.RIGHT) {
+		for _ in 0..<len(menu.buttons) {
+			menu.cursor_idx += 1
+			if menu.cursor_idx >= i32(len(menu.buttons)) do menu.cursor_idx = 0
+			if !menu.buttons[menu.cursor_idx].disabled do break
+		}
+		action = .MOVE
+	} else if rl.IsKeyPressed(.LEFT) {
+		for _ in 0..<len(menu.buttons) {
+			menu.cursor_idx -= 1
+			if menu.cursor_idx < 0 do menu.cursor_idx = cast(i32) (len(menu.buttons) - 1)
+			if !menu.buttons[menu.cursor_idx].disabled do break
+		}
+		action = .MOVE
+	} else if rl.IsKeyPressed(.SPACE) {
+		action = .SELECT
+	}
+	return action
 }

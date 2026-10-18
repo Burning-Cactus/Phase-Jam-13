@@ -59,14 +59,12 @@ spawn_item :: proc(type: Item_Type, pos: Vec2) {
 }
 
 use_item :: proc(item: Item_Type, target_id: i32) -> bool {
-	target := &entities[target_id]
-
 	#partial switch item {
-	case .COFFEE: heal_entity(target, 20)
-	case .ORANGE: heal_entity(target, 20)
-	case .BISCUIT: heal_entity(target, 40)
-	case .COOKIE: heal_entity(target, 40)
-	case .BROCCOLI_EGGS: heal_entity(target, 30)
+	case .COFFEE: heal_entity(target_id, 20)
+	case .ORANGE: heal_entity(target_id, 20)
+	case .BISCUIT: heal_entity(target_id, 40)
+	case .COOKIE: heal_entity(target_id, 40)
+	case .BROCCOLI_EGGS: heal_entity(target_id, 30)
 	// case .TEA: regen_entity
 	// case .HOT_CHOCOLATE:
 	// case .ANTIDOTE:

@@ -4,6 +4,7 @@ package game
 Action_Type :: enum {
 	NONE,
 	ATTACK,
+	SKILL,
 }
 
 Action_Definition :: struct {
@@ -22,6 +23,9 @@ actions := [Action_Type]Action_Definition {
 	.ATTACK = {
 		name = "Attack",
 		update = attack_action,
+	},
+	.SKILL = {
+
 	},
 }
 
