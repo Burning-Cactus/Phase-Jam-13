@@ -18,7 +18,7 @@ spell_charge_shader: rl.Shader
 spell_current_frame: c.int
 spell_color_loc: c.int
 
-test_texture: rl.Texture2D
+stairs_texture: rl.Texture2D
 
 // Mutable state
 
@@ -55,7 +55,7 @@ load_shaders :: proc() {
 		load_shaders_desktop()
 	}
 
-	test_texture = rl.LoadTexture("assets/ui/tile_selector.png")
+	stairs_texture = rl.LoadTexture("assets/exit_hole.png")
 }
 
 load_shaders_desktop :: proc() {
@@ -90,7 +90,7 @@ unload_shaders :: proc() {
 	rl.UnloadShader(damage_shader)
 	rl.UnloadShader(heal_shader)
 	rl.UnloadShader(spell_charge_shader)
-	rl.UnloadTexture(test_texture)
+	rl.UnloadTexture(stairs_texture)
 }
 
 add_damage_marker :: proc(target_entity_idx, amount: i32, is_healing: bool) {
@@ -145,7 +145,7 @@ draw_scene :: proc() {
 		}
 	}
 
-	rl.DrawTexture(test_texture, stairs_render_pos.x, stairs_render_pos.y, {0xff, 0xff, 0xff, 0xa0})
+	rl.DrawTexture(stairs_texture, stairs_render_pos.x, stairs_render_pos.y, {0xff, 0xff, 0xff, 0xa0})
 
 	for i in 0..<len(render_list) {
 		delta := rl.GetFrameTime()

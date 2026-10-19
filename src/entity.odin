@@ -41,6 +41,7 @@ Entity_Info :: struct {
 	base_attack: i32,
 	base_magic_power: i32,
 	base_speed: i32,
+	base_movement: f32,
 	entity_width: i32,
 	is_floating: bool,
 }
@@ -124,6 +125,7 @@ register_entities :: proc() {
 		base_health = 90,
 		base_attack = 16,
 		entity_width = 32,
+		base_movement = 0.025,
 	}
 	entity_definitions[.BIBI] = {
 		name = "Bibi",
@@ -132,6 +134,7 @@ register_entities :: proc() {
 		base_health = 110,
 		base_attack = 12,
 		entity_width = 32,
+		base_movement = 0.025,
 	}
 	entity_definitions[.SAMMY] = {
 		name = "Sammy",
@@ -140,6 +143,7 @@ register_entities :: proc() {
 		base_health = 35,
 		base_attack = 4,
 		entity_width = 32,
+		base_movement = 0.02,
 	}
 	entity_definitions[.MALISTOCRAT] = {
 		name = "Malistocrat",
@@ -149,6 +153,7 @@ register_entities :: proc() {
 		base_attack = 8,
 		entity_width = 32,
 		is_floating = true,
+		base_movement = 0.02,
 	}
 	entity_definitions[.BISCUITEER] = {
 		name = "Biscuiteer",
@@ -157,6 +162,7 @@ register_entities :: proc() {
 		base_health = 50,
 		base_attack = 4,
 		entity_width = 32,
+		base_movement = 0.02,
 	}
 	entity_definitions[.WILLAGER] = {
 		name = "Willager",
@@ -165,6 +171,7 @@ register_entities :: proc() {
 		base_health = 40,
 		base_attack = 6,
 		entity_width = 32,
+		base_movement = 0.02,
 	}
 
 	register_renderers()
@@ -341,6 +348,8 @@ spawn_entity :: proc(type: Entity_Type, pos: Vec2, team: Entity_Team) -> i32 {
 	for i in 0..<i32(len(entities)) {
 		if !entities[i].in_use {
 			definition := entity_definitions[type]
+			movement_speed := definition.base_movement
+			if movement_speed == 0 do movement_speed = 0.02
 			entities[i] = Entity {
 				in_use = true,
 				type = type,
@@ -350,7 +359,7 @@ spawn_entity :: proc(type: Entity_Type, pos: Vec2, team: Entity_Team) -> i32 {
 				health = definition.base_health,
 				attack_power = definition.base_attack,
 				attack_range = 1,
-				movement_speed = 0.02,
+				movement_speed = movement_speed,
 				is_floating = definition.is_floating,
 			}
 			return i
