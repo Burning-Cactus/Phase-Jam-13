@@ -171,12 +171,12 @@ update_vertical_menu :: proc(menu: ^Menu) -> (action: Menu_Action) {
 		pop_menu()
 		action = .Cancel
 		rl.PlaySound(select_sound)
-	} else if rl.IsKeyPressed(.DOWN) {
+	} else if rl.IsKeyPressed(.DOWN) || rl.IsKeyPressed(.S) {
 		menu.cursor_idx += 1
 		if menu.cursor_idx >= i32(len(menu.buttons)) do menu.cursor_idx = 0
 		action = .Move
 		rl.PlaySound(navigate_sound)
-	} else if rl.IsKeyPressed(.UP) {
+	} else if rl.IsKeyPressed(.UP) || rl.IsKeyPressed(.W) {
 		menu.cursor_idx -= 1
 		if menu.cursor_idx < 0 do menu.cursor_idx = cast(i32) (len(menu.buttons) - 1)
 		action = .Move
@@ -231,7 +231,7 @@ update_battle_menu :: proc(menu: ^Menu) {
 }
 
 open_target_menu :: proc() {
-	
+
 	target := &entities[party_leader_idx]
 	if target.type == .NITYA{
 		rl.PlaySound(nitya_eh_sound)
@@ -388,7 +388,7 @@ update_main_menu :: proc(menu: ^Menu) {
 			rl.DrawText(button.name, top_left.x, top_left.y + i * 20, 12, {0xb9, 0x94, 0x42, 0xff})
 		}
 	}
-	
+
 	top_left = Vec2i{250, 0}
 	rl.DrawText("Saga Mystery ", top_left.x + 7, top_left.y + 7, 30, {0xb9, 0x94, 0x42, 0xff})
 	rl.DrawText("Dungeon", top_left.x + 7, top_left.y + 37, 30, {0xb9, 0x94, 0x42, 0xff})
@@ -451,14 +451,14 @@ update_horizontal_menu :: proc(menu: ^Menu) -> (action: Menu_Action) {
 	if rl.IsKeyPressed(.BACKSPACE) {
 		pop_menu()
 		action = .Cancel
-	} else if rl.IsKeyPressed(.RIGHT) {
+	} else if rl.IsKeyPressed(.RIGHT) || rl.IsKeyPressed(.D) {
 		for _ in 0..<len(menu.buttons) {
 			menu.cursor_idx += 1
 			if menu.cursor_idx >= i32(len(menu.buttons)) do menu.cursor_idx = 0
 			if !menu.buttons[menu.cursor_idx].disabled do break
 		}
 		action = .Move
-	} else if rl.IsKeyPressed(.LEFT) {
+	} else if rl.IsKeyPressed(.LEFT) || rl.IsKeyPressed(.A) {
 		for _ in 0..<len(menu.buttons) {
 			menu.cursor_idx -= 1
 			if menu.cursor_idx < 0 do menu.cursor_idx = cast(i32) (len(menu.buttons) - 1)
