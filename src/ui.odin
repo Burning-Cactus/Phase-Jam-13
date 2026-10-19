@@ -213,6 +213,14 @@ update_battle_menu :: proc(menu: ^Menu) {
 }
 
 open_target_menu :: proc() {
+	
+	target := &entities[party_leader_idx]
+	if target.type == .NITYA{
+		rl.PlaySound(nitya_eh_sound)
+	} else if target.type == .BIBI{
+		rl.PlaySound(bibi_eh_sound)
+	}
+
 	next_menu, err := new(Menu, menu_allocator)
 	if err != nil {
 		fmt.printf("ERROR: Failed to allocate new menu instance!\n")
@@ -384,6 +392,12 @@ update_character_select :: proc(menu: ^Menu) {
 	if action == .Cancel do return
 	if action == .Select {
 		close_all_menus()
+		if character_select_panels[menu.cursor_idx].character_type == .NITYA {
+			rl.PlaySound(nitya_intro_sound)
+		} else if character_select_panels[menu.cursor_idx].character_type == .BIBI {
+			rl.PlaySound(bibi_intro_sound)
+		}
+
 		start_game(character_select_panels[menu.cursor_idx].character_type)
 		return
 	}
