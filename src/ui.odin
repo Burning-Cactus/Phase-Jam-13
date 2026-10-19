@@ -382,12 +382,18 @@ update_main_menu :: proc(menu: ^Menu) {
 	for i in i32(0)..<i32(len(menu.buttons)) {
 		button := menu.buttons[i]
 		if menu.cursor_idx == i {
-			rl.DrawText(button.name, top_left.x + 5, top_left.y + i * 20, 12, {0xff, 0xe1, 0x80, 0xff})
+			rl.DrawText(button.name, top_left.x + 5, top_left.y + i * 20, 12, {0xff, 0xec, 0xbf, 0xff})
 			rl.DrawTexture(menu_selector_texture, top_left.x - 6, top_left.y + i * 20 - 1, rl.WHITE)
 		} else {
-			rl.DrawText(button.name, top_left.x, top_left.y + i * 20, 12, {0xc2, 0xa5, 0x6e, 0xff})
+			rl.DrawText(button.name, top_left.x, top_left.y + i * 20, 12, {0xb9, 0x94, 0x42, 0xff})
 		}
 	}
+	
+	top_left = Vec2i{250, 0}
+	rl.DrawText("Saga Mystery ", top_left.x + 7, top_left.y + 7, 30, {0xb9, 0x94, 0x42, 0xff})
+	rl.DrawText("Dungeon", top_left.x + 7, top_left.y + 37, 30, {0xb9, 0x94, 0x42, 0xff})
+	rl.DrawText("Saga Mystery ", top_left.x + 5, top_left.y + 5, 30, {0xff, 0xec, 0xbf, 0xff})
+	rl.DrawText("Dungeon", top_left.x + 5, top_left.y + 35, 30, {0xff, 0xec, 0xbf, 0xff})
 }
 
 open_character_select :: proc() {
@@ -537,9 +543,9 @@ update_options_menu :: proc(menu: ^Menu) {
 
 	top_left.y += 20
 	if menu.cursor_idx == 4 {
-		rl.DrawText(menu.buttons[4].name, top_left.x + 5, top_left.y, 12, {0xff, 0xe1, 0x80, 0xff})
+		rl.DrawText(menu.buttons[4].name, top_left.x + 5, top_left.y, 12, {0xff, 0xec, 0xbf, 0xff})
 		rl.DrawTexture(menu_selector_texture, top_left.x - 6, top_left.y - 1, rl.WHITE)
 	} else {
-		rl.DrawText(menu.buttons[4].name, top_left.x, top_left.y, 12, {0xc2, 0xa5, 0x6e, 0xff})
+		rl.DrawText(menu.buttons[4].name, top_left.x, top_left.y, 12, {0xb9, 0x94, 0x42, 0xff})
 	}
 }
