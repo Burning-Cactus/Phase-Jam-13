@@ -22,6 +22,7 @@ menu_texture: rl.Texture2D
 @(private) healthbar_bg_texture: rl.Texture2D
 @(private) healthbar_texture: rl.Texture2D
 @(private) actionbar_texture: rl.Texture2D
+@(private) menu_selector_texture: rl.Texture2D
 
 @(private) character_select_panels: [5]Character_Panel
 
@@ -82,6 +83,7 @@ ui_init :: proc() {
 	healthbar_bg_texture = rl.LoadTexture("assets/ui/healthbar_bg.png")
 	healthbar_texture = rl.LoadTexture("assets/ui/healthbar.png")
 	actionbar_texture = rl.LoadTexture("assets/ui/actionbar.png")
+	menu_selector_texture = rl.LoadTexture("assets/ui/menu_selector.png")
 }
 
 ui_deinit :: proc() {
@@ -91,6 +93,7 @@ ui_deinit :: proc() {
 	rl.UnloadTexture(healthbar_bg_texture)
 	rl.UnloadTexture(healthbar_texture)
 	rl.UnloadTexture(actionbar_texture)
+	rl.UnloadTexture(menu_selector_texture)
 }
 
 draw_ui :: proc() {
@@ -379,11 +382,18 @@ update_main_menu :: proc(menu: ^Menu) {
 	for i in i32(0)..<i32(len(menu.buttons)) {
 		button := menu.buttons[i]
 		if menu.cursor_idx == i {
-			rl.DrawText(button.name, top_left.x + 5, top_left.y + i * 20, 12, {0x6a, 0x1d, 0x13, 0xff})
+			rl.DrawText(button.name, top_left.x + 5, top_left.y + i * 20, 12, {0xff, 0xec, 0xbf, 0xff})
+			rl.DrawTexture(menu_selector_texture, top_left.x - 6, top_left.y + i * 20 - 1, rl.WHITE)
 		} else {
-			rl.DrawText(button.name, top_left.x, top_left.y + i * 20, 12, {0x2a, 0x1b, 0x16, 0xff})
+			rl.DrawText(button.name, top_left.x, top_left.y + i * 20, 12, {0xb9, 0x94, 0x42, 0xff})
 		}
 	}
+	
+	top_left = Vec2i{250, 0}
+	rl.DrawText("Saga Mystery ", top_left.x + 7, top_left.y + 7, 30, {0xb9, 0x94, 0x42, 0xff})
+	rl.DrawText("Dungeon", top_left.x + 7, top_left.y + 37, 30, {0xb9, 0x94, 0x42, 0xff})
+	rl.DrawText("Saga Mystery ", top_left.x + 5, top_left.y + 5, 30, {0xff, 0xec, 0xbf, 0xff})
+	rl.DrawText("Dungeon", top_left.x + 5, top_left.y + 35, 30, {0xff, 0xec, 0xbf, 0xff})
 }
 
 open_character_select :: proc() {
@@ -533,8 +543,9 @@ update_options_menu :: proc(menu: ^Menu) {
 
 	top_left.y += 20
 	if menu.cursor_idx == 4 {
-		rl.DrawText(menu.buttons[4].name, top_left.x + 5, top_left.y, 12, {0x6a, 0x1d, 0x13, 0xff})
+		rl.DrawText(menu.buttons[4].name, top_left.x + 5, top_left.y, 12, {0xff, 0xec, 0xbf, 0xff})
+		rl.DrawTexture(menu_selector_texture, top_left.x - 6, top_left.y - 1, rl.WHITE)
 	} else {
-		rl.DrawText(menu.buttons[4].name, top_left.x, top_left.y, 12, {0x2a, 0x1b, 0x16, 0xff})
+		rl.DrawText(menu.buttons[4].name, top_left.x, top_left.y, 12, {0xb9, 0x94, 0x42, 0xff})
 	}
 }
