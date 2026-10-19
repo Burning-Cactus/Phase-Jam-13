@@ -11,7 +11,9 @@ TILE_HEIGHT :: 32
 current_floor: Floor
 floor_number: i32
 
-stairs: Stairs
+Stairs :: struct {
+	pos: Vec2i,
+}
 
 dungeon_tile_set: Tile_Set
 
@@ -19,6 +21,7 @@ entities := [100]Entity{}
 
 Floor :: struct {
 	tile_map: Tile_Map,
+	stairs: Stairs,
 }
 
 init_dungeon :: proc() {
@@ -38,6 +41,7 @@ advance_to_next_floor :: proc() {
 	generate_floor(cast(i64) seed)
 }
 
+@(private)
 generate_floor :: proc(seed: i64) {
 	delete(current_floor.tile_map.tiles)
 	width: i32 : 64
@@ -119,9 +123,36 @@ generate_floor :: proc(seed: i64) {
 			tiles[idx] = tile
 		}
 	}
+
+	item_count := rand.uint32_max(5) + 2 // Not deterministic based on seed argument
+	for _ in 0..<item_count {
+		type := cast(Item_Type) rand.uint32_range(1, len(Item_Type))
+		if type != .NONE do spawn_item(type, cast(Vec2) select_random_pos_not_obstructed(current_floor.tile_map))
+	}
+
+	enemy_count := rand.uint32_max(10) + 8 // Not deterministic based on seed argument
+	for _ in 0..<enemy_count {
+		type := cast(Entity_Type) rand.uint32_range(2, len(Entity_Type))
+		spawn_entity(type, cast(Vec2) select_random_pos_not_obstructed(current_floor.tile_map), .ENEMY)
+	}
 }
 
+select_random_pos_not_obstructed :: proc(tile_map: Tile_Map) -> Vec2i {
+	tile: u8 = 0
+	x: i32
+	y: i32
+	for tile == 0 || tile >= 150 {
+		x = rand.int31_max(tile_map.width)
+		y = rand.int31_max(tile_map.height)
+		tile, _ = get_tile({x, y}, tile_map)
+	}
+	return tile_map.pos + {x, y}
+}
 
-Stairs :: struct {
-	pos: Vec2i,
+update_world :: proc() {
+	if is_inside_rec(entities[party_leader_idx].pos, {f32(current_floor.stairs.pos.x), f32(current_floor.stairs.pos.y), 1, 1}) {
+		advance_to_next_floor()
+	} else {
+
+	}
 }

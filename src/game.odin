@@ -14,6 +14,7 @@ UPDATE_SPEED :: f32(1) / 120
 root_dir: string = ""
 
 run: bool = true
+loading: bool
 time_since_update: f32 = 0
 
 current_screen: Screen = .TITLE_SCREEN
@@ -25,7 +26,6 @@ main_character: Entity_Type
 
 canvas: rl.RenderTexture2D
 camera: rl.Camera2D
-
 title_screen_texture: rl.Texture2D
 
 // Use this for placing enemies and such when testing
@@ -80,6 +80,7 @@ game_update :: proc() {
 		rl.DrawTexturePro(canvas.texture, {0, 0, f32(RESOLUTION.x), f32(-RESOLUTION.y)}, {0, 0, f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())}, {0, 0}, 0, rl.WHITE)
 		rl.EndDrawing()
 		rl.UpdateMusicStream(swamp_music)
+		update_world()
 	}
 
 	// Everything on tracking allocator is valid until end-of-frame.
@@ -97,11 +98,14 @@ start_game :: proc(character: Entity_Type) {
 
 	spawn_entity(.SAMMY, {4, 1}, .ENEMY)
 	spawn_entity(.SAMMY, {8, 1}, .ENEMY)
+	spawn_entity(.WILLAGER, {6, 1}, .ENEMY)
 	spawn_entity(.MALISTOCRAT, {14, 1}, .ENEMY)
 
 	spawn_item(.COFFEE, {5, 5})
 	spawn_item(.BROCCOLI_EGGS, {5, 7})
 
+	append(&inventory, .COFFEE)
+	append(&inventory, .COFFEE)
 	append(&inventory, .COFFEE)
 
 	rl.PlayMusicStream(swamp_music)
@@ -126,6 +130,7 @@ game_init :: proc() {
 	ui_init()
 	load_shaders()
 	load_audio()
+	load_items()
 
 	canvas = rl.LoadRenderTexture(RESOLUTION.x, RESOLUTION.y)
 	camera = {
@@ -153,6 +158,7 @@ game_shutdown :: proc() {
 	ui_deinit()
 	unload_shaders()
 	unload_audio()
+	unload_items()
 	rl.UnloadTexture(menu_texture)
 	rl.UnloadRenderTexture(canvas)
 	rl.UnloadTexture(title_screen_texture)

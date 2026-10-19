@@ -134,8 +134,17 @@ draw_scene :: proc() {
 	slice.sort_by(render_list[:], sorting_callback)
 
 	draw_tile_map(current_floor.tile_map)
-	stairs_render_pos := cast(Vec2i) render_pos_from_world_pos(cast(Vec2) stairs.pos)
+	stairs_render_pos := cast(Vec2i) render_pos_from_world_pos(cast(Vec2) current_floor.stairs.pos)
 	stairs_render_pos.x -= TILE_WIDTH / 2
+
+	for i in 0..<len(field_items) {
+		field_item := field_items[i]
+		if field_item.in_use {
+			item_render_pos := cast(Vec2i) render_pos_from_world_pos(field_item.pos)
+			rl.DrawTexture(item_textures[field_item.type], item_render_pos.x, item_render_pos.y, rl.WHITE)
+		}
+	}
+
 	rl.DrawTexture(test_texture, stairs_render_pos.x, stairs_render_pos.y, {0xff, 0xff, 0xff, 0xa0})
 
 	for i in 0..<len(render_list) {
@@ -168,7 +177,7 @@ draw_entity :: proc(entity: ^Entity, delta: f32) {
 	current_frame := animation.frames[entity.animation_frame]
 
 	// Animation calculations
-	if current_menu == nil {
+	if current_menu == nil && !loading {
 		entity.frame_time += delta
 		if entity.frame_time >= current_frame.duration {
 			entity.frame_time = 0

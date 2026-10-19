@@ -47,7 +47,24 @@ adjust_sound_volume :: proc(sound_type: Audio_Type, amount: i32) {
 		rl.SetMasterVolume(f32(master_volume) / 100)
 	case .Sfx:
 		sfx_volume = math.clamp(sfx_volume + amount, 0, 100)
-		// vol := f32(sfx_volume) / 100
+		vol := f32(sfx_volume) / 100
+		rl.SetSoundVolume(bibi_damaged_sound, vol)
+		rl.SetSoundVolume(bibi_eh_sound, vol)
+		rl.SetSoundVolume(bibi_intro_sound, vol)
+		rl.SetSoundVolume(bibi_victory_sound, vol)
+		rl.SetSoundVolume(nitya_damaged_sound, vol)
+		rl.SetSoundVolume(nitya_eh_sound, vol)
+		rl.SetSoundVolume(nitya_intro_sound, vol)
+		rl.SetSoundVolume(nitya_victory_sound, vol)
+
+		rl.SetSoundVolume(spoon_ring_sound, vol)
+		rl.SetSoundVolume(spoon_short_sound, vol)
+		rl.SetSoundVolume(spoon_ting_sound, vol)
+		rl.SetSoundVolume(thud_sound, vol)
+		rl.SetSoundVolume(wood_bash_sound, vol)
+		rl.SetSoundVolume(cookie_crumble_sound, vol)
+		rl.SetSoundVolume(metal_sound, vol)
+		rl.SetSoundVolume(laser_sound, vol)
 	case .Ui:
 		ui_volume = math.clamp(ui_volume + amount, 0, 100)
 		vol := f32(ui_volume) / 100

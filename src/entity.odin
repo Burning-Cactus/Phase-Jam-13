@@ -29,6 +29,7 @@ Entity_Type :: enum {
 	SAMMY,
 	MALISTOCRAT,
 	BISCUITEER,
+	WILLAGER,
 }
 
 // Spawn chances should be determined per dungeon.
@@ -41,6 +42,7 @@ Entity_Info :: struct {
 	base_magic_power: i32,
 	base_speed: i32,
 	entity_width: i32,
+	is_floating: bool,
 }
 
 // These are all of the possible animations an entity can have.
@@ -109,7 +111,7 @@ Entity :: struct {
 	frame_time: f32,
 	facing_left: bool,
 	is_swinging: bool,
-	is_colliding: bool,
+	is_floating: bool,
 }
 
 enemies_nearby_player: bool
@@ -119,16 +121,16 @@ register_entities :: proc() {
 		name = "Nitya",
 		sprite_name = "nitty",
 		color_code = rl.GetColor(0x5d8000ff),
-		base_health = 40,
-		base_attack = 12,
+		base_health = 90,
+		base_attack = 16,
 		entity_width = 32,
 	}
 	entity_definitions[.BIBI] = {
 		name = "Bibi",
 		sprite_name = "bibi",
 		color_code = rl.GetColor(0xbd2d4eff),
-		base_health = 45,
-		base_attack = 10,
+		base_health = 110,
+		base_attack = 12,
 		entity_width = 32,
 	}
 	entity_definitions[.SAMMY] = {
@@ -146,12 +148,21 @@ register_entities :: proc() {
 		base_health = 25,
 		base_attack = 8,
 		entity_width = 32,
+		is_floating = true,
 	}
 	entity_definitions[.BISCUITEER] = {
 		name = "Biscuiteer",
 		sprite_name = "Biscuiteer",
 		color_code = rl.GetColor(0xbd2d4eff),
-		base_health = 30,
+		base_health = 50,
+		base_attack = 4,
+		entity_width = 32,
+	}
+	entity_definitions[.WILLAGER] = {
+		name = "Willager",
+		sprite_name = "willager",
+		color_code = rl.GetColor(0x98cbd6ff),
+		base_health = 40,
 		base_attack = 6,
 		entity_width = 32,
 	}
@@ -179,6 +190,7 @@ register_renderers :: proc() {
 		{ type = .SAMMY, sprite_name = "Sammie", y_offset = 8 },
 		{ type = .MALISTOCRAT, sprite_name = "Malistocrat", y_offset = 13 },
 		{ type = .BISCUITEER, sprite_name = "Biscuiteer", y_offset = 14 },
+		{ type = .WILLAGER, sprite_name = "willager", y_offset = 16 },
 	}
 
 	arena: mem.Dynamic_Arena
@@ -339,6 +351,7 @@ spawn_entity :: proc(type: Entity_Type, pos: Vec2, team: Entity_Team) -> bool {
 				attack_power = definition.base_attack,
 				attack_range = 1,
 				movement_speed = 0.02,
+				is_floating = definition.is_floating,
 			}
 			return true
 		}
@@ -381,7 +394,7 @@ update_entities :: proc() {
 					input_dir = linalg.normalize0(input_dir)
 
 					entity.velocity = input_dir * entity.movement_speed
-					
+
 					// Search for enemy
 					_, found := get_closest_entity_in_range(entity.pos, 6, {.ENEMY})
 					if enemies_nearby_player {
@@ -428,24 +441,22 @@ update_entities :: proc() {
 				}
 
 				// Move and slide/collisions
+				if entity.is_floating {
+					entity.pos += entity.velocity
+				} else {
+					old_pos := entity.pos
+					entity.pos.x += entity.velocity.x
+					check_pos := Vec2i{i32(math.floor(entity.pos.x)), i32(math.floor(entity.pos.y))}
+					if is_tile_solid(check_pos, current_floor.tile_map) {
+						entity.pos.x = old_pos.x
+					}
 
-
-				entity.is_colliding = false
-				old_pos := entity.pos
-				entity.pos.x += entity.velocity.x
-				check_pos := Vec2i{i32(math.floor(entity.pos.x)), i32(math.floor(entity.pos.y))}
-				if is_tile_solid(check_pos, current_floor.tile_map) {
-					entity.pos.x = old_pos.x
-					entity.is_colliding = true
+					entity.pos.y += entity.velocity.y
+					check_pos = Vec2i{i32(math.floor(entity.pos.x)), i32(math.floor(entity.pos.y))}
+					if is_tile_solid(check_pos, current_floor.tile_map) {
+						entity.pos.y = old_pos.y
+					}
 				}
-
-				entity.pos.y += entity.velocity.y
-				check_pos = Vec2i{i32(math.floor(entity.pos.x)), i32(math.floor(entity.pos.y))}
-				if is_tile_solid(check_pos, current_floor.tile_map) {
-					entity.pos.y = old_pos.y
-					entity.is_colliding = true
-				}
-
 
 				// info := entity_definitions[entity.type]
 				// width_offset := f32(info.entity_width) / (2 * TILE_WIDTH)
