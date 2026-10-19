@@ -682,7 +682,7 @@ get_entities_on_screen :: proc(screen_space: rl.Rectangle, allocator := context.
 	on_screen := make([dynamic]i32, 0, len(entities), allocator, loc)
 	for i in 0..<i32(len(entities)) {
 		target := entities[i]
-		if target.in_use {
+		if target.in_use && i != party_leader_idx { // Hack to remove player from attack menu
 			screen_pos := render_pos_from_world_pos(target.pos)
 			if is_inside_rec(screen_pos, screen_space) do append(&on_screen, i)
 		}
