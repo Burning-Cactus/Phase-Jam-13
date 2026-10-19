@@ -25,7 +25,6 @@ spoon_ting_sound: rl.Sound
 thud_sound: rl.Sound
 wood_bash_sound: rl.Sound
 cookie_crumble_sound: rl.Sound
-duck_sound: rl.Sound
 metal_sound: rl.Sound
 laser_sound: rl.Sound
 
@@ -97,9 +96,8 @@ load_audio :: proc() {
 	thud_sound = rl.LoadSound("assets/sounds/sfx/thud.wav")
 	wood_bash_sound = rl.LoadSound("assets/sounds/sfx/wood_bash.wav")
 	cookie_crumble_sound = rl.LoadSound("assets/sounds/sfx/cookie_crumble.wav")
-	duck_sound = rl.LoadSound("assets/sounds/sfx/duck_sound.mp3")
-	metal_sound = rl.LoadSound("assets/sounds/sfx/metal_sound.mp3")
-	laser_sound = rl.LoadSound("assets/sounds/sfx/laser_sound.mp3")
+	metal_sound = rl.LoadSound("assets/sounds/sfx/metal_sound.wav")
+	laser_sound = rl.LoadSound("assets/sounds/sfx/laser_sound.wav")
 	
 	rl.SetSoundVolume(spoon_ring_sound, f32(sfx_volume) / 100)
 	rl.SetSoundVolume(spoon_short_sound, f32(sfx_volume) / 100)
@@ -107,7 +105,6 @@ load_audio :: proc() {
 	rl.SetSoundVolume(thud_sound, f32(sfx_volume) / 100)
 	rl.SetSoundVolume(wood_bash_sound, f32(sfx_volume) / 100)
 	rl.SetSoundVolume(cookie_crumble_sound, f32(sfx_volume) / 100)
-	rl.SetSoundVolume(duck_sound, f32(sfx_volume) / 100)
 	rl.SetSoundVolume(metal_sound, f32(sfx_volume) / 100)
 	rl.SetSoundVolume(laser_sound, f32(sfx_volume) / 100)
 }
