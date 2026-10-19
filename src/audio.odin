@@ -68,13 +68,13 @@ load_audio :: proc() {
 	rl.SetSoundVolume(select_sound, f32(ui_volume) / 100)
 	rl.SetSoundVolume(navigate_sound, f32(ui_volume) / 100)
 	rl.SetMusicVolume(swamp_music, f32(music_volume) / 100)
-	
+
 	// Character Sounds
 	bibi_damaged_sound = rl.LoadSound("assets/sounds/bibi_scream.wav")
 	bibi_eh_sound = rl.LoadSound("assets/sounds/bibi_eh.wav")
 	bibi_intro_sound = rl.LoadSound("assets/sounds/bibi_intro.wav")
 	bibi_victory_sound = rl.LoadSound("assets/sounds/bibi_yay.wav")
-	
+
 	nitya_damaged_sound = rl.LoadSound("assets/sounds/nitya_scream.wav")
 	nitya_eh_sound = rl.LoadSound("assets/sounds/nitya_eh.wav")
 	nitya_intro_sound = rl.LoadSound("assets/sounds/nitya_intro.wav")
@@ -97,8 +97,8 @@ load_audio :: proc() {
 	wood_bash_sound = rl.LoadSound("assets/sounds/sfx/wood_bash.wav")
 	cookie_crumble_sound = rl.LoadSound("assets/sounds/sfx/cookie_crumble.wav")
 	metal_sound = rl.LoadSound("assets/sounds/sfx/metal_sound.wav")
-	laser_sound = rl.LoadSound("assets/sounds/sfx/laser_sound.wav")
-	
+	laser_sound = rl.LoadSound("assets/sounds/sfx/laser.wav")
+
 	rl.SetSoundVolume(spoon_ring_sound, f32(sfx_volume) / 100)
 	rl.SetSoundVolume(spoon_short_sound, f32(sfx_volume) / 100)
 	rl.SetSoundVolume(spoon_ting_sound, f32(sfx_volume) / 100)
