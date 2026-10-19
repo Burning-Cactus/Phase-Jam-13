@@ -38,14 +38,20 @@ unload_dungeon :: proc() {
 advance_to_next_floor :: proc() {
 	floor_number += 1
 	seed := rand.uint64()
+	for i in 0..<len(entities) {
+		entities[i].in_use = false
+	}
+	for i in 0..<len(field_items) {
+		field_items[i].in_use = false
+	}
 	generate_floor(cast(i64) seed)
 }
 
 @(private)
 generate_floor :: proc(seed: i64) {
 	delete(current_floor.tile_map.tiles)
-	width: i32 : 64
-	height: i32 : 64
+	width: i32 : 32
+	height: i32 : 32
 	tiles := make([]u8, width * height)
 	current_floor.tile_map = {
 		tile_set = dungeon_tile_set,
@@ -124,17 +130,21 @@ generate_floor :: proc(seed: i64) {
 		}
 	}
 
-	item_count := rand.uint32_max(5) + 2 // Not deterministic based on seed argument
+	item_count := rand.uint32_max(5) + 10 // Not deterministic based on seed argument
 	for _ in 0..<item_count {
 		type := cast(Item_Type) rand.uint32_range(1, len(Item_Type))
 		if type != .NONE do spawn_item(type, cast(Vec2) select_random_pos_not_obstructed(current_floor.tile_map))
 	}
 
-	enemy_count := rand.uint32_max(10) + 8 // Not deterministic based on seed argument
+	party_leader_idx = spawn_entity(main_character, cast(Vec2) select_random_pos_not_obstructed(current_floor.tile_map), .PLAYER)
+
+	enemy_count := rand.uint32_max(10) + 10 // Not deterministic based on seed argument
 	for _ in 0..<enemy_count {
 		type := cast(Entity_Type) rand.uint32_range(2, len(Entity_Type))
 		spawn_entity(type, cast(Vec2) select_random_pos_not_obstructed(current_floor.tile_map), .ENEMY)
 	}
+
+	current_floor.stairs.pos = select_random_pos_not_obstructed(current_floor.tile_map)
 }
 
 select_random_pos_not_obstructed :: proc(tile_map: Tile_Map) -> Vec2i {

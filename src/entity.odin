@@ -336,9 +336,9 @@ map_animations :: proc(animation_rows: []Animation_Row) -> [Animation_State]i32 
 	return mappings
 }
 
-// Tries to add an entity of input type to the input list. Returns false if failed.
-spawn_entity :: proc(type: Entity_Type, pos: Vec2, team: Entity_Team) -> bool {
-	for i in 0..<len(entities) {
+// Tries to add an entity of input type to the input list. Returns -1 if failed.
+spawn_entity :: proc(type: Entity_Type, pos: Vec2, team: Entity_Team) -> i32 {
+	for i in 0..<i32(len(entities)) {
 		if !entities[i].in_use {
 			definition := entity_definitions[type]
 			entities[i] = Entity {
@@ -353,10 +353,10 @@ spawn_entity :: proc(type: Entity_Type, pos: Vec2, team: Entity_Team) -> bool {
 				movement_speed = 0.02,
 				is_floating = definition.is_floating,
 			}
-			return true
+			return i
 		}
 	}
-	return false
+	return -1
 }
 
 update_entities :: proc() {
@@ -394,6 +394,13 @@ update_entities :: proc() {
 					input_dir = linalg.normalize0(input_dir)
 
 					entity.velocity = input_dir * entity.movement_speed
+
+					for &field_item in field_items {
+						if field_item.in_use && linalg.distance(field_item.pos, entity.pos) <= 1 {
+							append(&inventory, field_item.type) // TODO: check if inventory is full
+							field_item.in_use = false
+						}
+					}
 
 					// Search for enemy
 					_, found := get_closest_entity_in_range(entity.pos, 6, {.ENEMY})
@@ -629,6 +636,10 @@ damage_entity :: proc(target_idx: i32, power: i32) {
 		target.health = 0
 		target.ko_timer = 90
 		target.in_use = false
+		if target_idx == party_leader_idx {
+			game_over = true
+			game_over_ticks = 240
+		}
 	}
 
 	// Play hurt sound

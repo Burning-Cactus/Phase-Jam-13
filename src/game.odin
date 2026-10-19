@@ -24,6 +24,9 @@ party_leader_idx: i32 = 0
 
 main_character: Entity_Type
 
+game_over: bool
+game_over_ticks := 0
+
 canvas: rl.RenderTexture2D
 camera: rl.Camera2D
 title_screen_texture: rl.Texture2D
@@ -81,8 +84,14 @@ game_update :: proc() {
 		rl.EndDrawing()
 		rl.UpdateMusicStream(swamp_music)
 		update_world()
+		if game_over {
+			if game_over_ticks > 0 {
+				game_over_ticks -= 1
+			} else {
+				current_screen = .TITLE_SCREEN
+			}
+		}
 	}
-
 	// Everything on tracking allocator is valid until end-of-frame.
 	free_all(context.temp_allocator)
 }
@@ -91,25 +100,14 @@ start_game :: proc(character: Entity_Type) {
 	main_character = character
 	current_screen = .LEVEL
 
-	spawn_entity(character, {3, 3}, .PLAYER)
-
-	party_leader_idx = 0
-	spawn_entity(.BISCUITEER, {3, 3}, .ALLY)
-
-	spawn_entity(.SAMMY, {4, 1}, .ENEMY)
-	spawn_entity(.SAMMY, {8, 1}, .ENEMY)
-	spawn_entity(.WILLAGER, {6, 1}, .ENEMY)
-	spawn_entity(.MALISTOCRAT, {14, 1}, .ENEMY)
-
-	spawn_item(.COFFEE, {5, 5})
-	spawn_item(.BROCCOLI_EGGS, {5, 7})
-
 	append(&inventory, .COFFEE)
 	append(&inventory, .COFFEE)
 	append(&inventory, .COFFEE)
 
 	rl.PlayMusicStream(swamp_music)
 	init_dungeon()
+	game_over = false
+	game_over_ticks = 0
 }
 
 @(export)
