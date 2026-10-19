@@ -9,12 +9,10 @@ import rl "vendor:raylib"
 
 TILE_MAP_SIZE :: Vec2i{64, 64}
 
-tile_map: Tile_Map
-
 Tile_Map :: struct {
 	tile_set: Tile_Set `json:"-"`,
 	tile_set_name: string,
-	pos: Vec2 `json:"-"`,
+	pos: Vec2i `json:"-"`,
 	tiles: []u8,
 	width: i32,
 	height: i32,
@@ -41,17 +39,17 @@ create_tile_map :: proc(tile_map: ^Tile_Map) {
 	}
 	tile_map.tile_set = tile_set
 
-	map_width :: 64
-	map_height :: 64
+	map_width :: 8
+	map_height :: 8
 
 	tile_map.tiles = make([]u8, map_width * map_height)
 	tile_map.width = map_width
 	tile_map.height = map_height
 	for i in 0..<map_width*map_height {
-		id := i %% 8
+		id := i %% 4
 		tile_map.tiles[i] = cast(u8) id
 	}
-	tile_map.pos = {-32, -32}
+	tile_map.pos = {0, 0}
 }
 
 load_tile_map :: proc(tile_map_file_name: string) -> (tile_map: Tile_Map, success: bool) {
@@ -82,25 +80,6 @@ load_tile_map :: proc(tile_map_file_name: string) -> (tile_map: Tile_Map, succes
 unload_tile_map :: proc(tile_map: Tile_Map) {
 	delete(tile_map.tiles)
 	unload_tile_set(tile_map.tile_set)
-}
-
-draw_tile_map :: proc(tile_map_in: Tile_Map) {
-	tile_set := tile_map.tile_set
-	for j in 0..<tile_map_in.height {
-		for i in 0..<tile_map_in.width {
-			tile_idx := tile_map_in.tiles[j * tile_map_in.width + i]
-			tile_x := i32(tile_idx) %% tile_set.atlas_width
-			tile_y := i32(tile_idx) / tile_set.atlas_width
-
-			render_pos := render_pos_from_world_pos({f32(i), f32(j)} + tile_map.pos)
-
-			// What? Make sure you're properly calculating the row and height.
-			rl.DrawTextureRec(tile_set.texture, {f32(tile_x * tile_set.tile_width), f32(tile_y * tile_set.tile_height),
-				f32(tile_set.tile_width), f32(tile_set.tile_height)},
-				render_pos,
-				{0xff, 0xff, 0xff, 0xff})
-		}
-	}
 }
 
 load_tile_set :: proc(tile_set_file_name: string) -> (tile_set: Tile_Set, success: bool) {
@@ -137,4 +116,23 @@ load_tile_set :: proc(tile_set_file_name: string) -> (tile_set: Tile_Set, succes
 
 unload_tile_set :: proc(tile_set: Tile_Set) {
 	rl.UnloadTexture(tile_set.texture)
+}
+
+get_tile :: proc(pos: Vec2i, tile_map_in: Tile_Map) -> (tile: u8, error: bool = false) {
+	relative_pos := pos - tile_map_in.pos
+
+	if !is_inside_rec(relative_pos, {0, 0, tile_map_in.width - 1, tile_map_in.height - 1}) {
+		return 0, true
+	}
+
+	return tile_map_in.tiles[relative_pos.y * tile_map_in.width + relative_pos.x], false
+}
+
+is_tile_solid :: proc(pos: Vec2i, tile_map_in: Tile_Map) -> bool {
+	tile, err := get_tile(pos, tile_map_in)
+	if err || tile == 0 || tile >= 150 {
+		return true
+	} else {
+		return false
+	}
 }

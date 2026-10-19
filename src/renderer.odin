@@ -18,6 +18,7 @@ spell_charge_shader: rl.Shader
 spell_current_frame: c.int
 spell_color_loc: c.int
 
+test_texture: rl.Texture2D
 
 // Mutable state
 
@@ -53,6 +54,8 @@ load_shaders :: proc() {
 	} else {
 		load_shaders_desktop()
 	}
+
+	test_texture = rl.LoadTexture("assets/ui/tile_selector.png")
 }
 
 load_shaders_desktop :: proc() {
@@ -87,6 +90,7 @@ unload_shaders :: proc() {
 	rl.UnloadShader(damage_shader)
 	rl.UnloadShader(heal_shader)
 	rl.UnloadShader(spell_charge_shader)
+	rl.UnloadTexture(test_texture)
 }
 
 add_damage_marker :: proc(target_entity_idx, amount: i32, is_healing: bool) {
@@ -128,6 +132,12 @@ draw_scene :: proc() {
 		return i.screen_y < j.screen_y
 	}
 	slice.sort_by(render_list[:], sorting_callback)
+
+	draw_tile_map(current_floor.tile_map)
+	stairs_render_pos := cast(Vec2i) render_pos_from_world_pos(cast(Vec2) stairs.pos)
+	stairs_render_pos.x -= TILE_WIDTH / 2
+	rl.DrawTexture(test_texture, stairs_render_pos.x, stairs_render_pos.y, {0xff, 0xff, 0xff, 0xa0})
+
 	for i in 0..<len(render_list) {
 		delta := rl.GetFrameTime()
 		idx := render_list[i].id
@@ -196,15 +206,15 @@ draw_entity :: proc(entity: ^Entity, delta: f32) {
 		rl.BeginShaderMode(heal_shader)
 		rl.DrawTextureRec(renderer.texture, source_texture_rec, cast(Vec2) (render_pos - sprite_offset), rl.WHITE)
 		rl.EndShaderMode()
-	} else if false { // TODO: Use this when skills are added.
-		current_frame := f32(entity.living_ticks - entity.action_selected_tick)
-		col := entity_definitions[entity.type].color_code.rgb
-		spell_color := rl.Vector3{f32(col.r) / 255, f32(col.g) / 255, f32(col.b) / 255}
-		rl.SetShaderValue(spell_charge_shader, spell_current_frame, &current_frame, .FLOAT)
-		rl.SetShaderValue(spell_charge_shader, spell_color_loc, &spell_color, .VEC3)
-		rl.BeginShaderMode(spell_charge_shader)
-		rl.DrawTextureRec(renderer.texture, source_texture_rec,	cast(Vec2) (render_pos - sprite_offset), {0xff, 0xff, 0xff, 0xff})
-		rl.EndShaderMode()
+	// } else if entity.is_colliding { // TODO: Use this when skills are added.
+	// 	current_frame := f32(entity.living_ticks - entity.action_selected_tick)
+	// 	col := entity_definitions[entity.type].color_code.rgb
+	// 	spell_color := rl.Vector3{f32(col.r) / 255, f32(col.g) / 255, f32(col.b) / 255}
+	// 	rl.SetShaderValue(spell_charge_shader, spell_current_frame, &current_frame, .FLOAT)
+	// 	rl.SetShaderValue(spell_charge_shader, spell_color_loc, &spell_color, .VEC3)
+	// 	rl.BeginShaderMode(spell_charge_shader)
+	// 	rl.DrawTextureRec(renderer.texture, source_texture_rec,	cast(Vec2) (render_pos - sprite_offset), {0xff, 0xff, 0xff, 0xff})
+	// 	rl.EndShaderMode()
 	} else {
 		rl.DrawTextureRec(renderer.texture, source_texture_rec,	cast(Vec2) (render_pos - sprite_offset), {0xff, 0xff, 0xff, 0xff})
 	}
@@ -223,5 +233,26 @@ draw_entity :: proc(entity: ^Entity, delta: f32) {
 		fill_color = {0xac, 0x20, 0x32, 0xff}
 		bg_color = {0x74, 0x2b, 0x2b, 0xff}
 		draw_bar(f32(entity.health), f32(entity.max_health), health_bar_rect, fill_color, bg_color)
+	}
+}
+
+draw_tile_map :: proc(tile_map_in: Tile_Map) {
+	tile_set := tile_map_in.tile_set
+	y_offset := f32(tile_set.tile_height - 32)
+	for j in 0..<tile_map_in.height {
+		for i in 0..<tile_map_in.width {
+			tile_idx := tile_map_in.tiles[j * tile_map_in.width + i]
+			tile_x := i32(tile_idx) %% tile_set.atlas_width
+			tile_y := i32(tile_idx) / tile_set.atlas_width
+
+			render_pos := render_pos_from_world_pos({f32(i), f32(j)} + cast(Vec2) tile_map_in.pos)
+			render_pos.x -= TILE_WIDTH / 2
+
+			// What? Make sure you're properly calculating the row and height.
+			rl.DrawTextureRec(tile_set.texture, {f32(tile_x * tile_set.tile_width), f32(tile_y * tile_set.tile_height),
+				f32(tile_set.tile_width), f32(tile_set.tile_height)},
+				render_pos - {0, y_offset},
+				{0xff, 0xff, 0xff, 0xff})
+		}
 	}
 }

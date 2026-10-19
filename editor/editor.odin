@@ -232,7 +232,7 @@ run_tile_map_editor :: proc(file_path: string) {
 		{
 			rl.ClearBackground({0xbb, 0xbb, 0xbb, 0xff})
 			rl.BeginMode2D(camera)
-			adjusted_pos := tile_map.pos + {0.5, -0.5}
+			adjusted_pos := cast(game.Vec2) tile_map.pos
 			top_corner := game.render_pos_from_world_pos(adjusted_pos)
 			right_corner := game.render_pos_from_world_pos(adjusted_pos + {f32(tile_map.width), 0})
 			bottom_corner := game.render_pos_from_world_pos(adjusted_pos + {f32(tile_map.width), f32(tile_map.height)})
@@ -339,7 +339,7 @@ run_tile_set_editor :: proc(file_path: string, new_tile_set: bool) {
 		tile_pos += {0, 1}
 		tile_pos = linalg.floor(tile_pos)
 
-		selector_pos := game.render_pos_from_world_pos(tile_pos)
+		selector_pos := game.render_pos_from_world_pos(tile_pos) - {32, 0}
 
 		if rl.IsMouseButtonReleased(.LEFT) do gui_pressed = false
 

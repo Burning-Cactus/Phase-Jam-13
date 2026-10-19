@@ -5,9 +5,6 @@ import "core:math/linalg"
 
 WINDOW_SIZE :: Vec2i{1920, 1080}
 RESOLUTION :: Vec2i{480, 270}
-TILE_SIZE :: [2]i32{64, 32}
-TILE_WIDTH :: 64
-TILE_HEIGHT :: 32
 MAX_PARTY_SIZE :: 4
 MAX_ENEMIES :: 100
 PLAYER_SPEED :: 0.02
@@ -21,7 +18,6 @@ time_since_update: f32 = 0
 
 current_screen: Screen = .TITLE_SCREEN
 
-entities := [100]Entity{}
 party_member_ids := [MAX_PARTY_SIZE]i32{}
 party_leader_idx: i32 = 0
 
@@ -63,7 +59,7 @@ game_update :: proc() {
 		time_since_update += rl.GetFrameTime()
 		for time_since_update > UPDATE_SPEED {
 			if current_menu == nil {
-				update_entities(entities[:])
+				update_entities()
 			}
 			time_since_update -= UPDATE_SPEED
 		}
@@ -74,18 +70,12 @@ game_update :: proc() {
 
 		rl.BeginDrawing()
 		rl.BeginTextureMode(canvas)
-		{
 			rl.ClearBackground(rl.BLACK)
-
 			camera.target = linalg.floor(render_pos_from_world_pos(entities[party_leader_idx].pos))
 			rl.BeginMode2D(camera)
-
-			// TODO: Will need to hide entities behind terrain. Probably will just have to sort each array and do it row-by-row.
-			draw_tile_map(tile_map)
 			draw_scene()
 			rl.EndMode2D()
 			draw_ui()
-		}
 		rl.EndTextureMode()
 		rl.DrawTexturePro(canvas.texture, {0, 0, f32(RESOLUTION.x), f32(-RESOLUTION.y)}, {0, 0, f32(rl.GetScreenWidth()), f32(rl.GetScreenHeight())}, {0, 0}, 0, rl.WHITE)
 		rl.EndDrawing()
@@ -100,7 +90,7 @@ start_game :: proc(character: Entity_Type) {
 	main_character = character
 	current_screen = .LEVEL
 
-	spawn_entity(character, {2, 2}, .PLAYER)
+	spawn_entity(character, {3, 3}, .PLAYER)
 
 	party_leader_idx = 0
 	spawn_entity(.BISCUITEER, {3, 3}, .ALLY)
@@ -115,6 +105,7 @@ start_game :: proc(character: Entity_Type) {
 	append(&inventory, .COFFEE)
 
 	rl.PlayMusicStream(swamp_music)
+	init_dungeon()
 }
 
 @(export)
@@ -131,7 +122,6 @@ game_init_window :: proc() {
 game_init :: proc() {
 	menu_texture = rl.LoadTexture("assets/Map-Ui-Palette.png")
 	title_screen_texture = rl.LoadTexture("assets/ui/title_screen.png")
-	create_tile_map(&tile_map)
 	register_entities()
 	ui_init()
 	load_shaders()
@@ -159,7 +149,6 @@ game_should_run :: proc() -> bool {
 
 @(export)
 game_shutdown :: proc() {
-	unload_tile_map(tile_map)
 	unregister_entities()
 	ui_deinit()
 	unload_shaders()

@@ -1,0 +1,7 @@
+{
+	"texture_name": "swamp_tileset.png",
+	"atlas_width": 10,
+	"atlas_height": 20,
+	"tile_width": 64,
+	"tile_height": 64
+}

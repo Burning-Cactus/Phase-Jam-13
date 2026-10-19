@@ -108,6 +108,7 @@ Entity :: struct {
 	frame_time: f32,
 	facing_left: bool,
 	is_swinging: bool,
+	is_colliding: bool,
 }
 
 register_entities :: proc() {
@@ -342,7 +343,7 @@ spawn_entity :: proc(type: Entity_Type, pos: Vec2, team: Entity_Team) -> bool {
 	return false
 }
 
-update_entities :: proc(entities: []Entity) {
+update_entities :: proc() {
 	for i in i32(0)..<i32(len(entities)) {
 		entity := &entities[i]
 		if entity.in_use {
@@ -362,9 +363,7 @@ update_entities :: proc(entities: []Entity) {
 				}
 			}
 			// Travel code
-			if entity.is_swinging {
-
-			} else {
+			if !entity.is_swinging {
 				// TODO: Change this when the party system is set up
 				if i == party_leader_idx {
 					input_dir := Vec2{}
@@ -405,7 +404,62 @@ update_entities :: proc(entities: []Entity) {
 					}
 				}
 
-				entity.pos += entity.velocity
+				// Move and slide/collisions
+
+
+				entity.is_colliding = false
+				old_pos := entity.pos
+				entity.pos.x += entity.velocity.x
+				check_pos := Vec2i{i32(math.floor(entity.pos.x)), i32(math.floor(entity.pos.y))}
+				if is_tile_solid(check_pos, current_floor.tile_map) {
+					entity.pos.x = old_pos.x
+					entity.is_colliding = true
+				}
+
+				entity.pos.y += entity.velocity.y
+				check_pos = Vec2i{i32(math.floor(entity.pos.x)), i32(math.floor(entity.pos.y))}
+				if is_tile_solid(check_pos, current_floor.tile_map) {
+					entity.pos.y = old_pos.y
+					entity.is_colliding = true
+				}
+
+
+				// info := entity_definitions[entity.type]
+				// width_offset := f32(info.entity_width) / (2 * TILE_WIDTH)
+// 				{ // Slide on x axis
+// 					entity.pos.x += entity.velocity.x
+// 					min_y := entity.pos.y - width_offset
+// 					max_y := entity.pos.y + width_offset
+// 					x_dir := -1 if entity.velocity.x < 0 else 1
+// 					x_check := i32(math.floor(entity.pos.x + f32(x_dir) * width_offset))
+// 					for j in i32(math.floor(min_y))..=i32(math.floor(max_y)) {
+// 						if is_tile_solid({x_check, j}, current_floor.tile_map) {
+// 							if x_dir == -1 {
+// 								entity.pos.x = f32(x_check) + 1 + width_offset
+// 							} else {
+// 								entity.pos.x = f32(x_check) - width_offset
+// 							}
+// 						}
+// 					}
+// 				}
+//
+// 				{ // Slide on y axis
+// 					entity.pos.y += entity.velocity.y
+// 					min_x := entity.pos.x - width_offset
+// 					max_x := entity.pos.x + width_offset
+// 					y_dir := -1 if entity.velocity.y < 0 else 1
+// 					y_check := i32(math.floor(entity.pos.y + f32(y_dir) * width_offset))
+// 					for j in i32(math.floor(min_x))..=i32(math.floor(max_x)) {
+// 						if is_tile_solid({j, y_check}, current_floor.tile_map) {
+// 							if y_dir == -1 {
+// 								entity.pos.y = f32(y_check) + 1 + width_offset
+// 							} else {
+// 								entity.pos.y = f32(y_check) - width_offset
+// 							}
+// 						}
+// 					}
+// 				}
+
 			}
 			if entity.damage_timer > 0 {
 				entity.damage_timer -= 1

@@ -1,9 +1,10 @@
 package game
 
+import "core:math"
 import "core:math/linalg"
 import rl "vendor:raylib"
-// These matrices make up the axes of the game's coordinate system.
 
+// These matrices make up the axes of the game's coordinate system.
 iso_rotation_matrix := matrix[2, 2]f32 {
 	1, 1,
 	-1, 1,
@@ -37,4 +38,13 @@ is_inside_rec_i32_array :: proc(pos: Vec2i, rec: [4]i32) -> bool {
 		pos.x <= rec.x + rec[2] &&
 		pos.y >= rec.y &&
 		pos.y <= rec.y + rec[3]
+}
+
+circle_box_collision :: proc(origin: Vec2, radius: f32, box: rl.Rectangle) -> bool {
+	closest_x := math.clamp(origin.x, box.x, box.x + box.width)
+	closest_y := math.clamp(origin.y, box.y, box.y + box.height)
+	dist := origin - {closest_x, closest_y}
+	dir := radius * linalg.normalize0(dist)
+	closest_point := origin + dir
+	return is_inside_rec(closest_point, box)
 }
