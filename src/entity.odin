@@ -7,6 +7,7 @@ import "core:math/linalg"
 import "core:mem"
 import "core:strings"
 import rl "vendor:raylib"
+import "core:math/rand"
 
 DAMAGE_FLASH_DURATION :: 30
 
@@ -110,6 +111,8 @@ Entity :: struct {
 	is_swinging: bool,
 	is_colliding: bool,
 }
+
+enemies_nearby_player: bool
 
 register_entities :: proc() {
 	entity_definitions[.NITYA] = {
@@ -378,6 +381,26 @@ update_entities :: proc() {
 					input_dir = linalg.normalize0(input_dir)
 
 					entity.velocity = input_dir * entity.movement_speed
+					
+					// Search for enemy
+					_, found := get_closest_entity_in_range(entity.pos, 6, {.ENEMY})
+					if enemies_nearby_player {
+						if !found{
+							enemies_nearby_player = false
+							target := &entities[party_leader_idx]
+							if target.type == .NITYA{
+								rl.PlaySound(nitya_victory_sound)
+							} else if target.type == .BIBI{
+								rl.PlaySound(bibi_victory_sound)
+							}
+							fmt.println("WOA")
+						}
+					} else {
+						if found {
+							enemies_nearby_player = true
+						}
+					}
+
 				} else {
 					update_entity_ai(entity)
 				}
@@ -538,7 +561,32 @@ start_action :: proc(actor: ^Entity) {
 
 // This'll probably be a dynamic dispatch later
 update_action :: proc(actor: ^Entity) {
+	random_pitch := 0.95 + (rand.float32() * 0.10)
 	if actor.is_swinging == false {
+		// Play sound
+		if actor.type == .NITYA {
+			rl.SetSoundPitch(metal_sound, random_pitch)
+			rl.PlaySound(metal_sound)
+		} else if actor.type == .BIBI {
+			num := rand.int_max(2) + 1
+			if num == 1 {
+				rl.SetSoundPitch(spoon_ring_sound, random_pitch)
+				rl.PlaySound(spoon_ring_sound)
+			} else {
+				rl.SetSoundPitch(spoon_short_sound, random_pitch)
+				rl.PlaySound(spoon_short_sound)
+			}
+		} else if actor.type == .MALISTOCRAT{
+			rl.SetSoundPitch(laser_sound, random_pitch)
+			rl.PlaySound(laser_sound)
+		} else if actor.type == .SAMMY{
+			rl.SetSoundPitch(thud_sound, random_pitch)
+			rl.PlaySound(thud_sound)
+		} else if actor.type == .BISCUITEER{
+			rl.SetSoundPitch(spoon_short_sound, random_pitch)
+			rl.PlaySound(spoon_short_sound)
+		}
+
 		damage_entity(actor.target_id, actor.attack_power)
 		end_action(actor)
 	}
@@ -570,6 +618,13 @@ damage_entity :: proc(target_idx: i32, power: i32) {
 		target.health = 0
 		target.ko_timer = 90
 		target.in_use = false
+	}
+
+	// Play hurt sound
+	num := rand.int_max(4) + 1
+	if num == 1 {
+		if target.type == .NITYA do rl.PlaySound(nitya_damaged_sound)
+		else if target.type == .BIBI do rl.PlaySound(bibi_damaged_sound)
 	}
 }
 
