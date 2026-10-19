@@ -19,6 +19,10 @@ menu_texture: rl.Texture2D
 @(private) target_cursor: Target_Cursor
 @(private) target_cursor_texture: rl.Texture2D
 
+@(private) healthbar_bg_texture: rl.Texture2D
+@(private) healthbar_texture: rl.Texture2D
+@(private) actionbar_texture: rl.Texture2D
+
 @(private) character_select_panels: [5]Character_Panel
 
 @(private)
@@ -71,42 +75,53 @@ ui_init :: proc() {
 		{"Malice Evermore", {0x8f, 0x25, 0x55, 0xff}, {}, .NITYA},
 		{"Nitya Nil", {0x5d, 0x80, 0x00, 0xff}, {}, .NITYA},
 	}
-	character_select_panels[1].texture = rl.LoadTexture("assets/ui/character_select_sinon.png")
+	// character_select_panels[1].texture = rl.LoadTexture("assets/ui/character_select_sinon.png")
 	character_select_panels[2].texture = rl.LoadTexture("assets/ui/character_select_bibi.png")
 	character_select_panels[4].texture = rl.LoadTexture("assets/ui/character_select_nitya.png")
+
+	healthbar_bg_texture = rl.LoadTexture("assets/ui/healthbar_bg.png")
+	healthbar_texture = rl.LoadTexture("assets/ui/healthbar.png")
+	actionbar_texture = rl.LoadTexture("assets/ui/actionbar.png")
 }
 
 ui_deinit :: proc() {
 	rl.UnloadTexture(target_cursor_texture)
 	rl.UnloadTexture(character_select_panels[2].texture)
 	rl.UnloadTexture(character_select_panels[4].texture)
+	rl.UnloadTexture(healthbar_bg_texture)
+	rl.UnloadTexture(healthbar_texture)
+	rl.UnloadTexture(actionbar_texture)
 }
 
 draw_ui :: proc() {
 	player := entities[party_leader_idx]
-	info := entity_definitions[player.type]
+	// info := entity_definitions[player.type]
 
 	top_left := Vec2{f32(RESOLUTION.x) - 90, 10}
-	ui_size := Vec2{80, 40}
-	neutral_color := rl.Color{0x80, 0x80, 0x80, 0x66}
-	character_color := rl.Color{info.color_code.r, info.color_code.g, info.color_code.b, 0xcc}
-	rl.DrawRectangleGradientEx({top_left.x, top_left.y, ui_size.x, ui_size.y},
-		character_color, neutral_color,
-		neutral_color, character_color)
+	// ui_size := Vec2{80, 40}
+	// neutral_color := rl.Color{0x80, 0x80, 0x80, 0x66}
+	// character_color := rl.Color{info.color_code.r, info.color_code.g, info.color_code.b, 0xcc}
+	// rl.DrawRectangleGradientEx({top_left.x, top_left.y, ui_size.x, ui_size.y},
+	// 	character_color, neutral_color,
+	// 	neutral_color, character_color)
 
 	top_left = top_left + {10, 10}
 	max_hp := player.max_health // TODO: Do this for the whole party
 	hp := player.health
 	hp_ratio := f32(hp) / f32(max_hp)
-	draw_bar(hp_ratio, {top_left.x, top_left.y, 60, 5}, {0xc2, 0x00, 0x00, 0xff}, {0x42, 0x07, 0x07, 0xff})
+
+	draw_bar(hp_ratio, {top_left.x + 3, top_left.y - 6, 57, 11}, {0xc2, 0x00, 0x00, 0xff}, {0x42, 0x07, 0x07, 0xff})
 
 	if player.current_action != .NONE {
-		top_left = top_left + {0, 10}
 		action_cost: f32 = 30
 		action_time: f32 = player.action_charge
 		action_ratio := action_time / action_cost
-		draw_bar(action_ratio, {top_left.x, top_left.y, 40, 5}, rl.Color{0xa0, 0xa0, 0x22, 0xff}, rl.Color{0x4d, 0x4d, 0x00, 0xff})
+		draw_bar(action_ratio, {top_left.x + 20, top_left.y + 6, 35, 6}, rl.Color{0xff, 0xff, 0x55, 0xff}, rl.Color{0x66, 0x66, 0x00, 0xff})
 	}
+
+	rl.DrawTexture(healthbar_bg_texture, i32(top_left.x), i32(top_left.y - 30), rl.WHITE)
+	rl.DrawTexture(healthbar_texture, i32(top_left.x), i32(top_left.y - 30), rl.WHITE)
+	rl.DrawTexture(actionbar_texture, i32(top_left.x), i32(top_left.y - 30), rl.WHITE)
 
 	if current_menu != nil {
 		current_menu.routine(current_menu)
@@ -191,7 +206,7 @@ open_battle_menu :: proc() {
 		value = 2,
 	}
 	current_menu.routine = update_battle_menu
-	current_menu.top_left = Vec2i{20, RESOLUTION.y - 120}
+	current_menu.top_left = Vec2i{20, RESOLUTION.y - 130}
 }
 
 update_battle_menu :: proc(menu: ^Menu) {
@@ -228,7 +243,7 @@ open_target_menu :: proc() {
 	next_menu.prev = current_menu
 	current_menu = next_menu
 	current_menu.routine = update_target_menu
-	current_menu.top_left = Vec2i{20, RESOLUTION.y - 120}
+	current_menu.top_left = Vec2i{20, RESOLUTION.y - 130}
 	screen_space := rl.Rectangle{camera.target.x - f32(RESOLUTION.x) / 2, camera.target.y - f32(RESOLUTION.y) / 2, f32(RESOLUTION.x), f32(RESOLUTION.y)}
 	available_targets := get_entities_on_screen(screen_space)
 	defer delete(available_targets)
@@ -296,7 +311,7 @@ open_item_menu :: proc() {
 		}
 	}
 	current_menu.routine = update_item_menu
-	current_menu.top_left = Vec2i{20, RESOLUTION.y - 120}
+	current_menu.top_left = Vec2i{20, RESOLUTION.y - 130}
 }
 
 update_item_menu :: proc(menu: ^Menu) {
@@ -312,7 +327,7 @@ update_item_menu :: proc(menu: ^Menu) {
 }
 
 draw_battle_menu :: proc(menu: ^Menu) {
-	menu_size := Vec2{60, 100}
+	menu_size := Vec2{80, 120}
 	rl.DrawTexturePro(menu_texture, {0, 0, 48, 48}, {f32(menu.top_left.x), f32(menu.top_left.y), menu_size.x, menu_size.y}, 0, 0, rl.WHITE)
 
 	for i in 0..<i32(len(menu.buttons)) {
@@ -417,7 +432,7 @@ update_character_select :: proc(menu: ^Menu) {
 			rl.DrawTexture(panel.texture, top_left.x, top_left.y, rl.WHITE if !menu.buttons[i].disabled else {0xff, 0xff, 0xff, 0x80})
 		}
 		if menu.cursor_idx == i {
-			rl.DrawRectangleLinesEx({f32(top_left.x), f32(top_left.y), button_width, button_height}, 4.0, rl.WHITE)
+			rl.DrawRectangleLinesEx({f32(top_left.x), f32(top_left.y), button_width, button_height}, 2.0, rl.WHITE)
 		}
 	}
 }
